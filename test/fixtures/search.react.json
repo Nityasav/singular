@@ -1,0 +1,301 @@
+{
+  "query": "react",
+  "searchType": "fuzzy",
+  "searchVersion": "algolia",
+  "skills": [
+    {
+      "id": "vercel-labs/agent-skills/vercel-react-best-practices",
+      "source": "vercel-labs/agent-skills",
+      "skillId": "vercel-react-best-practices",
+      "name": "vercel-react-best-practices",
+      "installs": 740986
+    },
+    {
+      "id": "vercel-labs/agent-skills/vercel-react-native-skills",
+      "source": "vercel-labs/agent-skills",
+      "skillId": "vercel-react-native-skills",
+      "name": "vercel-react-native-skills",
+      "installs": 221064
+    },
+    {
+      "id": "vercel-labs/agent-skills/vercel-react-view-transitions",
+      "source": "vercel-labs/agent-skills",
+      "skillId": "vercel-react-view-transitions",
+      "name": "vercel-react-view-transitions",
+      "installs": 131606
+    },
+    {
+      "id": "vercel-labs/json-render/react",
+      "source": "vercel-labs/json-render",
+      "skillId": "react",
+      "name": "react",
+      "installs": 11473
+    },
+    {
+      "id": "google-labs-code/stitch-skills/reactcomponents",
+      "source": "google-labs-code/stitch-skills",
+      "skillId": "reactcomponents",
+      "name": "react:components",
+      "installs": 50713
+    },
+    {
+      "id": "callstackincubator/agent-skills/react-native-best-practices",
+      "source": "callstackincubator/agent-skills",
+      "skillId": "react-native-best-practices",
+      "name": "react-native-best-practices",
+      "installs": 26772
+    },
+    {
+      "id": "clerk/skills/clerk-react-patterns",
+      "source": "clerk/skills",
+      "skillId": "clerk-react-patterns",
+      "name": "clerk-react-patterns",
+      "installs": 17563
+    },
+    {
+      "id": "clerk/skills/clerk-react-router-patterns",
+      "source": "clerk/skills",
+      "skillId": "clerk-react-router-patterns",
+      "name": "clerk-react-router-patterns",
+      "installs": 14076
+    },
+    {
+      "id": "resend/react-email/react-email",
+      "source": "resend/react-email",
+      "skillId": "react-email",
+      "name": "react-email",
+      "installs": 8600
+    },
+    {
+      "id": "callstackincubator/agent-skills/upgrading-react-native",
+      "source": "callstackincubator/agent-skills",
+      "skillId": "upgrading-react-native",
+      "name": "upgrading-react-native",
+      "installs": 10696
+    },
+    {
+      "id": "greensock/gsap-skills/gsap-react",
+      "source": "greensock/gsap-skills",
+      "skillId": "gsap-react",
+      "name": "gsap-react",
+      "installs": 52315
+    },
+    {
+      "id": "rivet-dev/skills/rivetkit-client-react",
+      "source": "rivet-dev/skills",
+      "skillId": "rivetkit-client-react",
+      "name": "rivetkit-client-react",
+      "installs": 7545
+    },
+    {
+      "id": "google-labs-code/stitch-skills/stitchreact-native",
+      "source": "google-labs-code/stitch-skills",
+      "skillId": "stitchreact-native",
+      "name": "stitch::react-native",
+      "installs": 6960
+    },
+    {
+      "id": "google-labs-code/stitch-skills/stitchreact-components",
+      "source": "google-labs-code/stitch-skills",
+      "skillId": "stitchreact-components",
+      "name": "stitch::react-components",
+      "installs": 5876
+    },
+    {
+      "id": "millionco/react-doctor/react-doctor",
+      "source": "millionco/react-doctor",
+      "skillId": "react-doctor",
+      "name": "react-doctor",
+      "installs": 14832
+    },
+    {
+      "id": "software-mansion/argent/argent-react-native-optimization",
+      "source": "software-mansion/argent",
+      "skillId": "argent-react-native-optimization",
+      "name": "argent-react-native-optimization",
+      "installs": 19375
+    },
+    {
+      "id": "software-mansion/argent/argent-react-native-app-workflow",
+      "source": "software-mansion/argent",
+      "skillId": "argent-react-native-app-workflow",
+      "name": "argent-react-native-app-workflow",
+      "installs": 19333
+    },
+    {
+      "id": "software-mansion/argent/argent-react-native-profiler",
+      "source": "software-mansion/argent",
+      "skillId": "argent-react-native-profiler",
+      "name": "argent-react-native-profiler",
+      "installs": 19254
+    },
+    {
+      "id": "wshobson/agents/react-native-design",
+      "source": "wshobson/agents",
+      "skillId": "react-native-design",
+      "name": "react-native-design",
+      "installs": 14558
+    },
+    {
+      "id": "wshobson/agents/react-state-management",
+      "source": "wshobson/agents",
+      "skillId": "react-state-management",
+      "name": "react-state-management",
+      "installs": 14116
+    },
+    {
+      "id": "wshobson/agents/react-native-architecture",
+      "source": "wshobson/agents",
+      "skillId": "react-native-architecture",
+      "name": "react-native-architecture",
+      "installs": 14098
+    },
+    {
+      "id": "wshobson/agents/react-modernization",
+      "source": "wshobson/agents",
+      "skillId": "react-modernization",
+      "name": "react-modernization",
+      "installs": 11765
+    },
+    {
+      "id": "heroui-inc/heroui/heroui-react",
+      "source": "heroui-inc/heroui",
+      "skillId": "heroui-react",
+      "name": "heroui-react",
+      "installs": 11272
+    },
+    {
+      "id": "emblemcompany/agent-skills/emblem-ai-react",
+      "source": "emblemcompany/agent-skills",
+      "skillId": "emblem-ai-react",
+      "name": "emblem-ai-react",
+      "installs": 8769
+    },
+    {
+      "id": "dotneet/claude-code-marketplace/typescript-react-reviewer",
+      "source": "dotneet/claude-code-marketplace",
+      "skillId": "typescript-react-reviewer",
+      "name": "typescript-react-reviewer",
+      "installs": 8633
+    },
+    {
+      "id": "vercel-labs/agent-skills/vercel-composition-patterns",
+      "source": "vercel-labs/agent-skills",
+      "skillId": "vercel-composition-patterns",
+      "name": "vercel-composition-patterns",
+      "installs": 354544
+    },
+    {
+      "id": "vercel/ai/ai-sdk",
+      "source": "vercel/ai",
+      "skillId": "ai-sdk",
+      "name": "ai-sdk",
+      "installs": 61112
+    },
+    {
+      "id": "supabase/agent-skills/supabase",
+      "source": "supabase/agent-skills",
+      "skillId": "supabase",
+      "name": "supabase",
+      "installs": 290845
+    },
+    {
+      "id": "mattpocock/skills/tdd",
+      "source": "mattpocock/skills",
+      "skillId": "tdd",
+      "name": "tdd",
+      "installs": 960208
+    },
+    {
+      "id": "open.feishu.cn/lark-event",
+      "source": "open.feishu.cn",
+      "skillId": "lark-event",
+      "name": "lark-event",
+      "installs": 724768
+    },
+    {
+      "id": "anthropics/skills/web-artifacts-builder",
+      "source": "anthropics/skills",
+      "skillId": "web-artifacts-builder",
+      "name": "web-artifacts-builder",
+      "installs": 103476
+    },
+    {
+      "id": "heygen-com/hyperframes/hyperframes-creative",
+      "source": "heygen-com/hyperframes",
+      "skillId": "hyperframes-creative",
+      "name": "hyperframes-creative",
+      "installs": 494878
+    },
+    {
+      "id": "larksuite/cli/lark-event",
+      "source": "larksuite/cli",
+      "skillId": "lark-event",
+      "name": "lark-event",
+      "installs": 446775
+    },
+    {
+      "id": "designed-by-ai/skills/design-mobile-apps",
+      "source": "designed-by-ai/skills",
+      "skillId": "design-mobile-apps",
+      "name": "design-mobile-apps",
+      "installs": 403140
+    },
+    {
+      "id": "heygen-com/hyperframes/remotion-to-hyperframes",
+      "source": "heygen-com/hyperframes",
+      "skillId": "remotion-to-hyperframes",
+      "name": "remotion-to-hyperframes",
+      "installs": 327970
+    },
+    {
+      "id": "lllllllama/rigorpilot-skills/analyze-project",
+      "source": "lllllllama/rigorpilot-skills",
+      "skillId": "analyze-project",
+      "name": "analyze-project",
+      "installs": 311061
+    },
+    {
+      "id": "lllllllama/rigorpilot-skills/safe-debug",
+      "source": "lllllllama/rigorpilot-skills",
+      "skillId": "safe-debug",
+      "name": "safe-debug",
+      "installs": 310665
+    },
+    {
+      "id": "expo/skills/expo-tailwind-setup",
+      "source": "expo/skills",
+      "skillId": "expo-tailwind-setup",
+      "name": "expo-tailwind-setup",
+      "installs": 54444
+    },
+    {
+      "id": "mattpocock/skills/setup-ts-deep-modules",
+      "source": "mattpocock/skills",
+      "skillId": "setup-ts-deep-modules",
+      "name": "setup-ts-deep-modules",
+      "installs": 267289
+    },
+    {
+      "id": "heygen-com/hyperframes/pr-to-video",
+      "source": "heygen-com/hyperframes",
+      "skillId": "pr-to-video",
+      "name": "pr-to-video",
+      "installs": 262393
+    }
+  ],
+  "count": 200,
+  "duration_ms": 611,
+  "timings_ms": {
+    "rate_limit": 13.820673000009265,
+    "flags": 0.9548450000002049,
+    "visibility": 33.44548900000518,
+    "retrieval": 562.4721250000002,
+    "algolia_processing": 395,
+    "repositories": 27.88598899997305,
+    "ranking": 19.24396899997373,
+    "search": 611,
+    "total": 625.6132090000028
+  },
+  "provider_duration_ms": 562.4721250000002
+}

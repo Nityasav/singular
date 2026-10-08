@@ -1,0 +1,9 @@
+{
+  "session_id": "70ee3b3c-3529-460c-a20c-82aa9e8dfb4d",
+  "transcript_path": "/Users/nitya/.claude/projects/-private-tmp-claude-501--Users-nitya--superset-projects-claude-skills-cfa575e5-ae3c-4522-b59f-cd3623c88bf0-scratchpad-spike-cwd/70ee3b3c-3529-460c-a20c-82aa9e8dfb4d.jsonl",
+  "cwd": "/private/tmp/claude-501/-Users-nitya--superset-projects-claude-skills/cfa575e5-ae3c-4522-b59f-cd3623c88bf0/scratchpad/spike-cwd",
+  "prompt_id": "db9a5507-41a7-455b-acb8-2097056f0cc8",
+  "permission_mode": "default",
+  "hook_event_name": "UserPromptSubmit",
+  "prompt": "Add a Playwright e2e test for the checkout flow in this Next.js app and run it"
+}

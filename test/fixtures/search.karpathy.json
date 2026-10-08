@@ -1,0 +1,301 @@
+{
+  "query": "karpathy",
+  "searchType": "fuzzy",
+  "searchVersion": "algolia",
+  "skills": [
+    {
+      "id": "astro-han/karpathy-llm-wiki/karpathy-llm-wiki",
+      "source": "astro-han/karpathy-llm-wiki",
+      "skillId": "karpathy-llm-wiki",
+      "name": "karpathy-llm-wiki",
+      "installs": 7510
+    },
+    {
+      "id": "alchaincyf/karpathy-skill/andrej-karpathy-perspective",
+      "source": "alchaincyf/karpathy-skill",
+      "skillId": "andrej-karpathy-perspective",
+      "name": "andrej-karpathy-perspective",
+      "installs": 2987
+    },
+    {
+      "id": "szkocot/andrej-karpathy-skills/karpathy-guidelines",
+      "source": "szkocot/andrej-karpathy-skills",
+      "skillId": "karpathy-guidelines",
+      "name": "karpathy-guidelines",
+      "installs": 2867
+    },
+    {
+      "id": "karpathy/nanochat/read-arxiv-paper",
+      "source": "karpathy/nanochat",
+      "skillId": "read-arxiv-paper",
+      "name": "read-arxiv-paper",
+      "installs": 2745
+    },
+    {
+      "id": "alirezarezvani/claude-skills/karpathy-coder",
+      "source": "alirezarezvani/claude-skills",
+      "skillId": "karpathy-coder",
+      "name": "karpathy-coder",
+      "installs": 1065
+    },
+    {
+      "id": "sickn33/agentic-awesome-skills/andrej-karpathy",
+      "source": "sickn33/agentic-awesome-skills",
+      "skillId": "andrej-karpathy",
+      "name": "andrej-karpathy",
+      "installs": 408
+    },
+    {
+      "id": "duolahypercho/andrej-karpathy-skills/andrej-karpathy-skill",
+      "source": "duolahypercho/andrej-karpathy-skills",
+      "skillId": "andrej-karpathy-skill",
+      "name": "andrej-karpathy-skill",
+      "installs": 126
+    },
+    {
+      "id": "learnprompt/andrej-karpathy-skills/karpathy-agentic-engineering",
+      "source": "learnprompt/andrej-karpathy-skills",
+      "skillId": "karpathy-agentic-engineering",
+      "name": "karpathy-agentic-engineering",
+      "installs": 93
+    },
+    {
+      "id": "learnprompt/andrej-karpathy-skills/karpathy-methodology",
+      "source": "learnprompt/andrej-karpathy-skills",
+      "skillId": "karpathy-methodology",
+      "name": "karpathy-methodology",
+      "installs": 87
+    },
+    {
+      "id": "learnprompt/andrej-karpathy-skills/karpathy-minimalism",
+      "source": "learnprompt/andrej-karpathy-skills",
+      "skillId": "karpathy-minimalism",
+      "name": "karpathy-minimalism",
+      "installs": 86
+    },
+    {
+      "id": "learnprompt/andrej-karpathy-skills/karpathy-supply-chain-hygiene",
+      "source": "learnprompt/andrej-karpathy-skills",
+      "skillId": "karpathy-supply-chain-hygiene",
+      "name": "karpathy-supply-chain-hygiene",
+      "installs": 83
+    },
+    {
+      "id": "learnprompt/andrej-karpathy-skills/karpathy-autoresearch",
+      "source": "learnprompt/andrej-karpathy-skills",
+      "skillId": "karpathy-autoresearch",
+      "name": "karpathy-autoresearch",
+      "installs": 82
+    },
+    {
+      "id": "learnprompt/andrej-karpathy-skills/karpathy-understanding-first",
+      "source": "learnprompt/andrej-karpathy-skills",
+      "skillId": "karpathy-understanding-first",
+      "name": "karpathy-understanding-first",
+      "installs": 81
+    },
+    {
+      "id": "learnprompt/andrej-karpathy-skills/karpathy-llm-wiki",
+      "source": "learnprompt/andrej-karpathy-skills",
+      "skillId": "karpathy-llm-wiki",
+      "name": "karpathy-llm-wiki",
+      "installs": 81
+    },
+    {
+      "id": "learnprompt/andrej-karpathy-skills/karpathy-education-first",
+      "source": "learnprompt/andrej-karpathy-skills",
+      "skillId": "karpathy-education-first",
+      "name": "karpathy-education-first",
+      "installs": 81
+    },
+    {
+      "id": "learnprompt/andrej-karpathy-skills/karpathy-system-prompt-learning",
+      "source": "learnprompt/andrej-karpathy-skills",
+      "skillId": "karpathy-system-prompt-learning",
+      "name": "karpathy-system-prompt-learning",
+      "installs": 80
+    },
+    {
+      "id": "learnprompt/andrej-karpathy-skills/karpathy-idea-files",
+      "source": "learnprompt/andrej-karpathy-skills",
+      "skillId": "karpathy-idea-files",
+      "name": "karpathy-idea-files",
+      "installs": 79
+    },
+    {
+      "id": "learnprompt/andrej-karpathy-skills/karpathy-practice-environments",
+      "source": "learnprompt/andrej-karpathy-skills",
+      "skillId": "karpathy-practice-environments",
+      "name": "karpathy-practice-environments",
+      "installs": 79
+    },
+    {
+      "id": "learnprompt/andrej-karpathy-skills/karpathy-output-evolution",
+      "source": "learnprompt/andrej-karpathy-skills",
+      "skillId": "karpathy-output-evolution",
+      "name": "karpathy-output-evolution",
+      "installs": 78
+    },
+    {
+      "id": "learnprompt/andrej-karpathy-skills/karpathy-vibe-to-agentic",
+      "source": "learnprompt/andrej-karpathy-skills",
+      "skillId": "karpathy-vibe-to-agentic",
+      "name": "karpathy-vibe-to-agentic",
+      "installs": 77
+    },
+    {
+      "id": "learnprompt/andrej-karpathy-skills/karpathy-meta-reflection",
+      "source": "learnprompt/andrej-karpathy-skills",
+      "skillId": "karpathy-meta-reflection",
+      "name": "karpathy-meta-reflection",
+      "installs": 77
+    },
+    {
+      "id": "learnprompt/andrej-karpathy-skills/karpathy-llm-simulator",
+      "source": "learnprompt/andrej-karpathy-skills",
+      "skillId": "karpathy-llm-simulator",
+      "name": "karpathy-llm-simulator",
+      "installs": 75
+    },
+    {
+      "id": "tmdgusya/engineering-discipline/karpathy",
+      "source": "tmdgusya/engineering-discipline",
+      "skillId": "karpathy",
+      "name": "karpathy",
+      "installs": 52
+    },
+    {
+      "id": "cowork-os/cowork-os/karpathy-guidelines",
+      "source": "cowork-os/cowork-os",
+      "skillId": "karpathy-guidelines",
+      "name": "karpathy-guidelines",
+      "installs": 85
+    },
+    {
+      "id": "athola/claude-night-market/karpathy-principles",
+      "source": "athola/claude-night-market",
+      "skillId": "karpathy-principles",
+      "name": "karpathy-principles",
+      "installs": 80
+    },
+    {
+      "id": "wilbeibi/wilbeibi-skills/karpathy-planning",
+      "source": "wilbeibi/wilbeibi-skills",
+      "skillId": "karpathy-planning",
+      "name": "karpathy-planning",
+      "installs": 71
+    },
+    {
+      "id": "gaasher/agent-loop-skills/karpathy",
+      "source": "gaasher/agent-loop-skills",
+      "skillId": "karpathy",
+      "name": "karpathy",
+      "installs": 35
+    },
+    {
+      "id": "opendemon/andrej-karpathy-skill/andrej-karpathy",
+      "source": "opendemon/andrej-karpathy-skill",
+      "skillId": "andrej-karpathy",
+      "name": "andrej-karpathy",
+      "installs": 46
+    },
+    {
+      "id": "youmind-openlab/karpathy-rss-daily-skill/karpathy-rss-daily-skill",
+      "source": "youmind-openlab/karpathy-rss-daily-skill",
+      "skillId": "karpathy-rss-daily-skill",
+      "name": "karpathy-rss-daily-skill",
+      "installs": 39
+    },
+    {
+      "id": "nvidia/nemo-fabric/karpathy-guidelines",
+      "source": "nvidia/nemo-fabric",
+      "skillId": "karpathy-guidelines",
+      "name": "karpathy-guidelines",
+      "installs": 11
+    },
+    {
+      "id": "smithery.ai/karpathy-guidelines",
+      "source": "smithery.ai",
+      "skillId": "karpathy-guidelines",
+      "name": "karpathy-guidelines",
+      "installs": 49
+    },
+    {
+      "id": "attilaberencsi/sapskills/karpathy",
+      "source": "attilaberencsi/sapskills",
+      "skillId": "karpathy",
+      "name": "karpathy",
+      "installs": 20
+    },
+    {
+      "id": "nvidia/nemo-relay/karpathy-guidelines",
+      "source": "nvidia/nemo-relay",
+      "skillId": "karpathy-guidelines",
+      "name": "karpathy-guidelines",
+      "installs": 8
+    },
+    {
+      "id": "vtroiswhite/andrej-karpathy-skills/karpathy-guidelines",
+      "source": "vtroiswhite/andrej-karpathy-skills",
+      "skillId": "karpathy-guidelines",
+      "name": "karpathy-guidelines",
+      "installs": 24
+    },
+    {
+      "id": "langgenius/dify/karpathy-guidelines",
+      "source": "langgenius/dify",
+      "skillId": "karpathy-guidelines",
+      "name": "karpathy-guidelines",
+      "installs": 30
+    },
+    {
+      "id": "akindu23/my-agent-skills/karpathy-guidelines",
+      "source": "akindu23/my-agent-skills",
+      "skillId": "karpathy-guidelines",
+      "name": "karpathy-guidelines",
+      "installs": 28
+    },
+    {
+      "id": "skezu/skills/karpathy-guidelines",
+      "source": "skezu/skills",
+      "skillId": "karpathy-guidelines",
+      "name": "karpathy-guidelines",
+      "installs": 27
+    },
+    {
+      "id": "pedronauck/skills/karpathy-kb",
+      "source": "pedronauck/skills",
+      "skillId": "karpathy-kb",
+      "name": "karpathy-kb",
+      "installs": 26
+    },
+    {
+      "id": "nanocoai/nanoclaw/add-karpathy-llm-wiki",
+      "source": "nanocoai/nanoclaw",
+      "skillId": "add-karpathy-llm-wiki",
+      "name": "add-karpathy-llm-wiki",
+      "installs": 26
+    },
+    {
+      "id": "bahayonghang/obsidian-notes-karpathy/obsidian-notes-karpathy",
+      "source": "bahayonghang/obsidian-notes-karpathy",
+      "skillId": "obsidian-notes-karpathy",
+      "name": "obsidian-notes-karpathy",
+      "installs": 17
+    }
+  ],
+  "count": 200,
+  "duration_ms": 904,
+  "timings_ms": {
+    "rate_limit": 32.23623799998313,
+    "flags": 1.0970929999893997,
+    "visibility": 6.24728100001812,
+    "retrieval": 853.4522230000002,
+    "algolia_processing": 597,
+    "repositories": 35.046948000002885,
+    "ranking": 13.006121000013081,
+    "search": 904,
+    "total": 936.0759969999781
+  },
+  "provider_duration_ms": 853.4522230000002
+}

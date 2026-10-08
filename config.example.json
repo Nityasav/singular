@@ -1,0 +1,23 @@
+{
+  "mode": "suggest",
+  "allowlist": [
+    "anthropics",
+    "vercel-labs",
+    "microsoft",
+    "multica-ai"
+  ],
+  "installFloor": 1000,
+  "maxLocalSkills": 3,
+  "maxCandidates": 2,
+  "minPromptChars": 40,
+  "remoteTimeoutMs": 2500,
+  "totalBudgetMs": 6000,
+  "contextBudgetChars": 2000,
+  "cacheTtlHours": 24,
+  "skillsCliVersion": "1.5.26",
+  "requireAuditPass": true,
+  "stackDetection": true,
+  "blockedRefs": [],
+  "pinnedSkills": [],
+  "prefetch": true
+}

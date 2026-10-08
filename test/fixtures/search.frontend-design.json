@@ -1,0 +1,301 @@
+{
+  "query": "frontend design",
+  "searchType": "semantic",
+  "searchVersion": "algolia",
+  "skills": [
+    {
+      "id": "anthropics/skills/frontend-design",
+      "source": "anthropics/skills",
+      "skillId": "frontend-design",
+      "name": "frontend-design",
+      "installs": 918047
+    },
+    {
+      "id": "vercel-labs/agent-eval/frontend-design",
+      "source": "vercel-labs/agent-eval",
+      "skillId": "frontend-design",
+      "name": "frontend-design",
+      "installs": 1836
+    },
+    {
+      "id": "leonxlnx/taste-skill/design-taste-frontend",
+      "source": "leonxlnx/taste-skill",
+      "skillId": "design-taste-frontend",
+      "name": "design-taste-frontend",
+      "installs": 514273
+    },
+    {
+      "id": "leonxlnx/taste-skill/design-taste-frontend-v1",
+      "source": "leonxlnx/taste-skill",
+      "skillId": "design-taste-frontend-v1",
+      "name": "design-taste-frontend-v1",
+      "installs": 258798
+    },
+    {
+      "id": "pbakaus/impeccable/frontend-design",
+      "source": "pbakaus/impeccable",
+      "skillId": "frontend-design",
+      "name": "frontend-design",
+      "installs": 54551
+    },
+    {
+      "id": "vercel-labs/open-agents/frontend-design",
+      "source": "vercel-labs/open-agents",
+      "skillId": "frontend-design",
+      "name": "frontend-design",
+      "installs": 486
+    },
+    {
+      "id": "smithery.ai/frontend-design",
+      "source": "smithery.ai",
+      "skillId": "frontend-design",
+      "name": "frontend-design",
+      "installs": 6254
+    },
+    {
+      "id": "julianoczkowski/designer-skills/frontend-design",
+      "source": "julianoczkowski/designer-skills",
+      "skillId": "frontend-design",
+      "name": "frontend-design",
+      "installs": 5217
+    },
+    {
+      "id": "nexu-io/open-design/frontend-design",
+      "source": "nexu-io/open-design",
+      "skillId": "frontend-design",
+      "name": "frontend-design",
+      "installs": 4422
+    },
+    {
+      "id": "cline/skills/frontend-design",
+      "source": "cline/skills",
+      "skillId": "frontend-design",
+      "name": "frontend-design",
+      "installs": 4273
+    },
+    {
+      "id": "bytedance/deer-flow/frontend-design",
+      "source": "bytedance/deer-flow",
+      "skillId": "frontend-design",
+      "name": "frontend-design",
+      "installs": 3571
+    },
+    {
+      "id": "affaan-m/ecc/frontend-design-direction",
+      "source": "affaan-m/ecc",
+      "skillId": "frontend-design-direction",
+      "name": "frontend-design-direction",
+      "installs": 6365
+    },
+    {
+      "id": "mager/frontend-design/frontend-design",
+      "source": "mager/frontend-design",
+      "skillId": "frontend-design",
+      "name": "frontend-design",
+      "installs": 1656
+    },
+    {
+      "id": "sickn33/agentic-awesome-skills/frontend-design",
+      "source": "sickn33/agentic-awesome-skills",
+      "skillId": "frontend-design",
+      "name": "frontend-design",
+      "installs": 2410
+    },
+    {
+      "id": "jwynia/agent-skills/frontend-design",
+      "source": "jwynia/agent-skills",
+      "skillId": "frontend-design",
+      "name": "frontend-design",
+      "installs": 2318
+    },
+    {
+      "id": "modelscope.cn/frontend-design",
+      "source": "modelscope.cn",
+      "skillId": "frontend-design",
+      "name": "frontend-design",
+      "installs": 1929
+    },
+    {
+      "id": "affaan-m/ecc/frontend-design",
+      "source": "affaan-m/ecc",
+      "skillId": "frontend-design",
+      "name": "frontend-design",
+      "installs": 1782
+    },
+    {
+      "id": "customware-ai/skills/frontend-design",
+      "source": "customware-ai/skills",
+      "skillId": "frontend-design",
+      "name": "frontend-design",
+      "installs": 1567
+    },
+    {
+      "id": "am-will/codex-skills/frontend-design",
+      "source": "am-will/codex-skills",
+      "skillId": "frontend-design",
+      "name": "frontend-design",
+      "installs": 1426
+    },
+    {
+      "id": "samber/cc-skills/frontend-design-deslop",
+      "source": "samber/cc-skills",
+      "skillId": "frontend-design-deslop",
+      "name": "frontend-design-deslop",
+      "installs": 2399
+    },
+    {
+      "id": "ulpi-io/skills/frontend-design-ui-ux",
+      "source": "ulpi-io/skills",
+      "skillId": "frontend-design-ui-ux",
+      "name": "frontend-design-ui-ux",
+      "installs": 2375
+    },
+    {
+      "id": "everyinc/compound-engineering-plugin/ce-frontend-design",
+      "source": "everyinc/compound-engineering-plugin",
+      "skillId": "ce-frontend-design",
+      "name": "ce-frontend-design",
+      "installs": 1817
+    },
+    {
+      "id": "ilm-alan/frontend-design/frontend-design",
+      "source": "ilm-alan/frontend-design",
+      "skillId": "frontend-design",
+      "name": "frontend-design",
+      "installs": 534
+    },
+    {
+      "id": "digitalsamba/claude-code-video-toolkit/frontend-design",
+      "source": "digitalsamba/claude-code-video-toolkit",
+      "skillId": "frontend-design",
+      "name": "frontend-design",
+      "installs": 789
+    },
+    {
+      "id": "factory-ai/factory-plugins/frontend-design",
+      "source": "factory-ai/factory-plugins",
+      "skillId": "frontend-design",
+      "name": "frontend-design",
+      "installs": 149
+    },
+    {
+      "id": "composio-community/awesome-claude-plugins/frontend-design",
+      "source": "composio-community/awesome-claude-plugins",
+      "skillId": "frontend-design",
+      "name": "frontend-design",
+      "installs": 729
+    },
+    {
+      "id": "kv0906/cc-skills/premium-frontend-design",
+      "source": "kv0906/cc-skills",
+      "skillId": "premium-frontend-design",
+      "name": "premium-frontend-design",
+      "installs": 1347
+    },
+    {
+      "id": "everyinc/compound-engineering-plugin/frontend-design",
+      "source": "everyinc/compound-engineering-plugin",
+      "skillId": "frontend-design",
+      "name": "frontend-design",
+      "installs": 629
+    },
+    {
+      "id": "microsoft/skills/frontend-design-review",
+      "source": "microsoft/skills",
+      "skillId": "frontend-design-review",
+      "name": "frontend-design-review",
+      "installs": 218
+    },
+    {
+      "id": "secondsky/claude-skills/frontend-design",
+      "source": "secondsky/claude-skills",
+      "skillId": "frontend-design",
+      "name": "frontend-design",
+      "installs": 428
+    },
+    {
+      "id": "mrgoonie/claudekit-skills/frontend-design",
+      "source": "mrgoonie/claudekit-skills",
+      "skillId": "frontend-design",
+      "name": "frontend-design",
+      "installs": 414
+    },
+    {
+      "id": "block/agent-skills/frontend-design",
+      "source": "block/agent-skills",
+      "skillId": "frontend-design",
+      "name": "frontend-design",
+      "installs": 394
+    },
+    {
+      "id": "buildermethods/design-os/frontend-design",
+      "source": "buildermethods/design-os",
+      "skillId": "frontend-design",
+      "name": "frontend-design",
+      "installs": 379
+    },
+    {
+      "id": "skills.volces.com/frontend-design",
+      "source": "skills.volces.com",
+      "skillId": "frontend-design",
+      "name": "frontend-design",
+      "installs": 374
+    },
+    {
+      "id": "binjuhor/shadcn-lar/frontend-design-pro",
+      "source": "binjuhor/shadcn-lar",
+      "skillId": "frontend-design-pro",
+      "name": "frontend-design-pro",
+      "installs": 718
+    },
+    {
+      "id": "kesslerio/ultimate-frontend-design-openclaw-skill/frontend-design-ultimate",
+      "source": "kesslerio/ultimate-frontend-design-openclaw-skill",
+      "skillId": "frontend-design-ultimate",
+      "name": "frontend-design-ultimate",
+      "installs": 454
+    },
+    {
+      "id": "galaxy-dawn/claude-scholar/frontend-design",
+      "source": "galaxy-dawn/claude-scholar",
+      "skillId": "frontend-design",
+      "name": "frontend-design",
+      "installs": 340
+    },
+    {
+      "id": "am-will/codex-skills/frontend-responsive-design-standards",
+      "source": "am-will/codex-skills",
+      "skillId": "frontend-responsive-design-standards",
+      "name": "Frontend Responsive Design Standards",
+      "installs": 1243
+    },
+    {
+      "id": "edgesparkhq/agent-skills/edgespark-frontend-design",
+      "source": "edgesparkhq/agent-skills",
+      "skillId": "edgespark-frontend-design",
+      "name": "edgespark-frontend-design",
+      "installs": 580
+    },
+    {
+      "id": "dengineproblem/agents-monorepo/frontend-design",
+      "source": "dengineproblem/agents-monorepo",
+      "skillId": "frontend-design",
+      "name": "frontend-design",
+      "installs": 288
+    }
+  ],
+  "count": 200,
+  "duration_ms": 1015,
+  "timings_ms": {
+    "rate_limit": 15.837553000004846,
+    "flags": 1.1890540000022156,
+    "visibility": 24.886034999988624,
+    "retrieval": 965.0840719999978,
+    "algolia_processing": 548,
+    "repositories": 32.89918999999645,
+    "ranking": 14.468487999984063,
+    "search": 1015,
+    "total": 1030.7516900000046
+  },
+  "provider_duration_ms": 965.0840719999978
+}

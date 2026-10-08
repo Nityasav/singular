@@ -1,0 +1,15 @@
+{
+  "name": "skill-scout",
+  "version": "0.1.0",
+  "description": "Claude Code plugin: per-prompt skill routing, stack detection, and gated, pinned, ephemeral discovery of third-party skills",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test 'test/*.test.js'",
+    "e2e": "bash test/e2e/run.sh"
+  },
+  "license": "MIT"
+}

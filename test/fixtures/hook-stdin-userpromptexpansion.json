@@ -1,0 +1,13 @@
+{
+  "session_id": "6b39b259-2970-43c2-a420-bfaec1a132cc",
+  "transcript_path": "/Users/nitya/.claude/projects/-private-tmp-claude-501--Users-nitya--superset-projects-claude-skills-cfa575e5-ae3c-4522-b59f-cd3623c88bf0-scratchpad-spike-cwd/6b39b259-2970-43c2-a420-bfaec1a132cc.jsonl",
+  "cwd": "/private/tmp/claude-501/-Users-nitya--superset-projects-claude-skills/cfa575e5-ae3c-4522-b59f-cd3623c88bf0/scratchpad/spike-cwd",
+  "prompt_id": "2bc8809b-cab8-4d49-90be-688a3d270847",
+  "permission_mode": "default",
+  "hook_event_name": "UserPromptExpansion",
+  "expansion_type": "slash_command",
+  "command_name": "spike-plugin:scout-load",
+  "command_args": "multica-ai/andrej-karpathy-skills@karpathy-guidelines",
+  "command_source": "plugin",
+  "prompt": "/spike-plugin:scout-load multica-ai/andrej-karpathy-skills@karpathy-guidelines"
+}
