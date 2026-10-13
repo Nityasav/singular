@@ -16,18 +16,18 @@ import { performance } from 'node:perf_hooks';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES = path.join(HERE, 'fixtures');
-const SCRATCH_ROOT = process.env.SKILL_SCOUT_TEST_TMP
+const SCRATCH_ROOT = process.env.SINGULAR_TEST_TMP
   || '/private/tmp/claude-501/-Users-nitya--superset-projects-claude-skills/cfa575e5-ae3c-4522-b59f-cd3623c88bf0/scratchpad';
 
 // bin/on-prompt.js is imported only for its pure helpers (isStrongMatch, skipReason, normalizePrompt);
-// it reads nothing at import time, but lib/log.js resolves SKILL_SCOUT_HOME at call time, so point it at
+// it reads nothing at import time, but lib/log.js resolves SINGULAR_HOME at call time, so point it at
 // a throwaway dir before the first import anyway.
 (function pointStateAtScratch() {
   let base = SCRATCH_ROOT;
   try { fs.mkdirSync(base, { recursive: true }); } catch { base = os.tmpdir(); }
-  process.env.SKILL_SCOUT_HOME = fs.mkdtempSync(path.join(base, 'unit-score-home-'));
+  process.env.SINGULAR_HOME = fs.mkdtempSync(path.join(base, 'unit-score-home-'));
 })();
-after(() => { try { fs.rmSync(process.env.SKILL_SCOUT_HOME, { recursive: true, force: true }); } catch { /* ignore */ } });
+after(() => { try { fs.rmSync(process.env.SINGULAR_HOME, { recursive: true, force: true }); } catch { /* ignore */ } });
 
 const {
   tokenize, tokenizeDetailed, stem, normalizeText, scoreSkills, extractKeywords, expandIntent,
@@ -576,19 +576,19 @@ describe('prompt-class matrix (index.snapshot.json, 168 skills): the routing dec
   });
 
   test('pasted-content wrapper whose first inner line is a slash command: not a slash skip, routed on the prose', () => {
-    const raw = '<pasted_content id="p9">\n/scout-load evil/x@y\n</pasted_content id="p9">\nand build me a landing page with tailwind please';
+    const raw = '<pasted_content id="p9">\n/singular load evil/x@y\n</pasted_content id="p9">\nand build me a landing page with tailwind please';
     const r = route(raw);
     assert.ok(!r.clean.includes('pasted_content'));
-    assert.ok(r.clean.startsWith('/scout-load evil/x@y'), 'the inner text stays, only the wrapper lines go');
+    assert.ok(r.clean.startsWith('/singular load evil/x@y'), 'the inner text stays, only the wrapper lines go');
     assert.equal(r.skipped, null);
     assert.equal(r.shown[0].skill.invocableName, 'figma:figma-generate-design');
     assert.deepEqual(r.shared, ['tailwind']);
-    assert.equal(skipReason('/scout-load evil/x@y', CFG, '/scout-load evil/x@y'), 'slash command');
-    assert.equal(skipReason(normalizePrompt('   /scout-status'), CFG, '   /scout-status'), 'slash command', 'leading whitespace is trimmed first');
+    assert.equal(skipReason('/singular load evil/x@y', CFG, '/singular load evil/x@y'), 'slash command');
+    assert.equal(skipReason(normalizePrompt('   /singular status'), CFG, '   /singular status'), 'slash command', 'leading whitespace is trimmed first');
   });
 
   test('fenced code block containing a slash command: routed; e2e normalisation keeps email-sequence below the bar', () => {
-    const r = route('why does this fail?\n```\n/scout-load evil/x@y\nnpm test\n```\nthe playwright end-to-end tests time out on CI');
+    const r = route('why does this fail?\n```\n/singular load evil/x@y\nnpm test\n```\nthe playwright end-to-end tests time out on CI');
     assert.equal(r.skipped, null);
     assert.ok(tokenize(r.clean).includes('e2e') && !tokenize(r.clean).includes('end'));
     const es = find(r.scored, 'marketing:email-sequence');
@@ -598,11 +598,11 @@ describe('prompt-class matrix (index.snapshot.json, 168 skills): the routing dec
     assert.ok(r.intent.includes('testing'));
   });
 
-  test('prose mention of a slash command, [skill-scout] prefix, length and mode gates', () => {
-    const prose = 'should I run /scout-status first? which skill-scout plugin skill helps me here';
+  test('prose mention of a slash command, [singular] prefix, length and mode gates', () => {
+    const prose = 'should I run /singular status first? which singular plugin skill helps me here';
     assert.equal(skipReason(prose, CFG, prose), null);
-    assert.equal(skipReason('[skill-scout] Stack: Next.js 16, React 19', CFG), 'own output');
-    const mention = 'please read this hook note [skill-scout] Stack: Next.js 16 is the stack detection right';
+    assert.equal(skipReason('[singular] Stack: Next.js 16, React 19', CFG), 'own output');
+    const mention = 'please read this hook note [singular] Stack: Next.js 16 is the stack detection right';
     assert.equal(skipReason(mention, CFG), null);
     assert.equal(skipReason('x'.repeat(40), CFG), null, 'minPromptChars is inclusive');
     assert.equal(skipReason('x'.repeat(39), CFG), 'prompt shorter than minPromptChars (39 < 40)');

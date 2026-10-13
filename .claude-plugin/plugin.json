@@ -1,8 +1,8 @@
 {
-  "name": "skill-scout",
-  "displayName": "Skill Scout",
-  "version": "0.1.0",
-  "description": "Per-prompt routing to installed skills, project stack detection, and allowlist-gated, commit-pinned, ephemeral loading of third-party skills from skills.sh.",
+  "name": "singular",
+  "displayName": "Singular",
+  "version": "0.2.0",
+  "description": "Singular: per-prompt routing to installed skills, project stack detection, and allowlist-gated, commit-pinned, ephemeral loading of third-party skills from skills.sh.",
   "author": { "name": "Nitya Sav" },
   "license": "MIT",
   "keywords": ["skills", "discovery", "hooks", "skills.sh", "routing"],

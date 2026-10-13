@@ -1,7 +1,7 @@
 // test/unit-cache.test.js — node --test test/unit-cache.test.js
 // Exhaustive unit tests for lib/cache.js: key hashing, TTL arithmetic, corrupt files, atomic writes,
-// stats and clear. No network. Every path is under a throwaway SKILL_SCOUT_HOME; the real ~/.claude is
-// never read or written (a relative SKILL_SCOUT_HOME is only exercised with HOME redirected too).
+// stats and clear. No network. Every path is under a throwaway SINGULAR_HOME; the real ~/.claude is
+// never read or written (a relative SINGULAR_HOME is only exercised with HOME redirected too).
 
 import { test, describe, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -10,7 +10,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-const SCRATCH_ROOT = process.env.SKILL_SCOUT_TEST_TMP
+const SCRATCH_ROOT = process.env.SINGULAR_TEST_TMP
   || '/private/tmp/claude-501/-Users-nitya--superset-projects-claude-skills/cfa575e5-ae3c-4522-b59f-cd3623c88bf0/scratchpad';
 
 function mkTmp(label) {
@@ -20,14 +20,14 @@ function mkTmp(label) {
 }
 
 // Throwaway state dir BEFORE the first import (lib/cache.js imports lib/config.js, which reads env lazily,
-// but the default-env tests below rely on process.env.SKILL_SCOUT_HOME being set).
+// but the default-env tests below rely on process.env.SINGULAR_HOME being set).
 // The account's real home, captured BEFORE process.env.HOME is redirected: on POSIX os.homedir() follows $HOME, so
 // the isolation assertion at the end must not consult it after the redirect.
 const REAL_HOME = (() => { try { return os.userInfo().homedir || os.homedir(); } catch { return os.homedir(); } })();
 const ROOT = mkTmp('state');
 const FAKE_HOME = path.join(ROOT, 'fakehome');
 fs.mkdirSync(FAKE_HOME, { recursive: true });
-process.env.SKILL_SCOUT_HOME = path.join(ROOT, 'scout-home');
+process.env.SINGULAR_HOME = path.join(ROOT, 'singular-home');
 process.env.HOME = FAKE_HOME;
 
 const { cacheGet, cacheSet, cacheFile, cacheStats, cacheClear, cacheDir } = await import('../lib/cache.js');
@@ -35,10 +35,10 @@ const { cacheGet, cacheSet, cacheFile, cacheStats, cacheClear, cacheDir } = awai
 after(() => { try { fs.rmSync(ROOT, { recursive: true, force: true }); } catch { /* ignore */ } });
 
 let n = 0;
-/** A fresh env whose SKILL_SCOUT_HOME is an unused absolute dir (not created yet). */
+/** A fresh env whose SINGULAR_HOME is an unused absolute dir (not created yet). */
 function freshEnv(label = 'h') {
   n++;
-  return { SKILL_SCOUT_HOME: path.join(ROOT, `${label}-${n}`), HOME: FAKE_HOME };
+  return { SINGULAR_HOME: path.join(ROOT, `${label}-${n}`), HOME: FAKE_HOME };
 }
 const sha256 = (s) => createHash('sha256').update(s).digest('hex');
 const listTmp = (dir) => (fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => f.endsWith('.tmp')) : []);
@@ -48,7 +48,7 @@ const listTmp = (dir) => (fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) =>
 describe('cacheDir / cacheFile', () => {
   test('cacheDir is <home>/cache and cacheFile is <dir>/<sha256(key)>.json; the key is coerced to a string', () => {
     const env = freshEnv();
-    assert.equal(cacheDir(env), path.join(env.SKILL_SCOUT_HOME, 'cache'));
+    assert.equal(cacheDir(env), path.join(env.SINGULAR_HOME, 'cache'));
     assert.equal(cacheFile('search:react', env), path.join(cacheDir(env), `${sha256('search:react')}.json`));
     assert.equal(cacheFile(123, env), cacheFile('123', env), 'numbers hash like their string form');
     assert.equal(cacheFile(null, env), cacheFile('null', env));
@@ -71,13 +71,13 @@ describe('cacheDir / cacheFile', () => {
     assert.ok(!fs.existsSync(dir), 'cacheFile is pure: nothing is created');
   });
 
-  test('default env is process.env; a relative SKILL_SCOUT_HOME is ignored in favour of $HOME/.claude/skill-scout', () => {
-    assert.equal(cacheDir(), path.join(process.env.SKILL_SCOUT_HOME, 'cache'));
-    assert.equal(cacheFile('k'), path.join(process.env.SKILL_SCOUT_HOME, 'cache', `${sha256('k')}.json`));
-    const rel = { SKILL_SCOUT_HOME: 'relative/dir', HOME: FAKE_HOME };
-    assert.equal(cacheDir(rel), path.join(FAKE_HOME, '.claude', 'skill-scout', 'cache'));
-    const blank = { SKILL_SCOUT_HOME: '   ', HOME: FAKE_HOME };
-    assert.equal(cacheDir(blank), path.join(FAKE_HOME, '.claude', 'skill-scout', 'cache'));
+  test('default env is process.env; a relative SINGULAR_HOME is ignored in favour of $HOME/.claude/singular', () => {
+    assert.equal(cacheDir(), path.join(process.env.SINGULAR_HOME, 'cache'));
+    assert.equal(cacheFile('k'), path.join(process.env.SINGULAR_HOME, 'cache', `${sha256('k')}.json`));
+    const rel = { SINGULAR_HOME: 'relative/dir', HOME: FAKE_HOME };
+    assert.equal(cacheDir(rel), path.join(FAKE_HOME, '.claude', 'singular', 'cache'));
+    const blank = { SINGULAR_HOME: '   ', HOME: FAKE_HOME };
+    assert.equal(cacheDir(blank), path.join(FAKE_HOME, '.claude', 'singular', 'cache'));
   });
 });
 
@@ -278,11 +278,11 @@ describe('atomicity and failure of cacheSet', () => {
 
   test('an unwritable home (a regular file in the way) makes cacheSet return false and cacheGet null', () => {
     const env = freshEnv();
-    fs.mkdirSync(path.dirname(env.SKILL_SCOUT_HOME), { recursive: true });
-    fs.writeFileSync(env.SKILL_SCOUT_HOME, 'not a directory');
+    fs.mkdirSync(path.dirname(env.SINGULAR_HOME), { recursive: true });
+    fs.writeFileSync(env.SINGULAR_HOME, 'not a directory');
     assert.equal(cacheSet('k', 'v', env), false);
     assert.equal(cacheGet('k', 1, env), null);
-    assert.deepEqual(cacheStats(env), { dir: path.join(env.SKILL_SCOUT_HOME, 'cache'), entries: 0, bytes: 0, oldestTs: null, newestTs: null });
+    assert.deepEqual(cacheStats(env), { dir: path.join(env.SINGULAR_HOME, 'cache'), entries: 0, bytes: 0, oldestTs: null, newestTs: null });
     assert.equal(cacheClear(env), 0);
   });
 
@@ -377,21 +377,21 @@ describe('cacheClear', () => {
 // ---------------------------------------------------------------------------
 
 describe('default env (process.env) and isolation', () => {
-  test('without an env argument every function uses process.env.SKILL_SCOUT_HOME (the throwaway dir)', () => {
+  test('without an env argument every function uses process.env.SINGULAR_HOME (the throwaway dir)', () => {
     assert.equal(cacheSet('default-key', { ok: true }, undefined), true);
     assert.deepEqual(cacheGet('default-key', 1), { ok: true });
-    assert.ok(cacheFile('default-key').startsWith(process.env.SKILL_SCOUT_HOME));
+    assert.ok(cacheFile('default-key').startsWith(process.env.SINGULAR_HOME));
     assert.ok(cacheStats().entries >= 1);
     assert.ok(cacheClear() >= 1);
     assert.equal(cacheGet('default-key', 1), null);
   });
 
-  test('no cache entry was ever written under the fake $HOME/.claude (SKILL_SCOUT_HOME wins over HOME when absolute)', () => {
-    // homeDir() mkdirs the fallback home when a relative SKILL_SCOUT_HOME is probed (see cacheDir tests), but no
-    // cache directory or entry may appear there: every write went to an absolute SKILL_SCOUT_HOME.
-    assert.ok(!fs.existsSync(path.join(FAKE_HOME, '.claude', 'skill-scout', 'cache')));
+  test('no cache entry was ever written under the fake $HOME/.claude (SINGULAR_HOME wins over HOME when absolute)', () => {
+    // homeDir() mkdirs the fallback home when a relative SINGULAR_HOME is probed (see cacheDir tests), but no
+    // cache directory or entry may appear there: every write went to an absolute SINGULAR_HOME.
+    assert.ok(!fs.existsSync(path.join(FAKE_HOME, '.claude', 'singular', 'cache')));
     assert.notEqual(REAL_HOME, FAKE_HOME, 'the captured real home is not the fake one');
     assert.equal(os.homedir(), FAKE_HOME, 'os.homedir() follows the redirected $HOME, which is why REAL_HOME was captured first');
-    assert.ok(!fs.existsSync(path.join(REAL_HOME, '.claude', 'skill-scout', 'cache', `${sha256('default-key')}.json`)), 'the real home never saw this suite\'s key');
+    assert.ok(!fs.existsSync(path.join(REAL_HOME, '.claude', 'singular', 'cache', `${sha256('default-key')}.json`)), 'the real home never saw this suite\'s key');
   });
 });

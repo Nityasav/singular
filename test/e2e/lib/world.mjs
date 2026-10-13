@@ -1,6 +1,6 @@
-// test/e2e/lib/world.mjs — per-case isolation: a fresh SKILL_SCOUT_HOME (outside every cwd) with a config.json,
+// test/e2e/lib/world.mjs — per-case isolation: a fresh SINGULAR_HOME (outside every cwd) with a config.json,
 // a temp cwd (a copy of test/fixtures/projects/next-tailwind-ts with a .git/HEAD by default), readers for the
-// isolated scout.log and cache, and a direct `node bin/<script>.js` runner for the no-model paths.
+// isolated singular.log and cache, and a direct `node bin/<script>.js` runner for the no-model paths.
 
 import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
@@ -43,8 +43,9 @@ export function realHome() {
 }
 
 /** The directory name Claude Code derives from a cwd for ~/.claude/projects/<name> (every / and . becomes -). */
+/** The ~/.claude/projects/<name> Claude Code derives from a cwd: every character outside [A-Za-z0-9-] becomes `-` (observed 2.1.296: `/`, `.` and `_` alike; `/_probe/login/cwd` -> `--probe-login-cwd`). */
 export function projectDirName(cwd) {
-  return String(cwd).replace(/[/.]/g, '-');
+  return String(cwd).replace(/[^A-Za-z0-9-]/g, '-');
 }
 
 export function writeConfig(home, config = {}) {
@@ -71,7 +72,7 @@ export function writeProjectSkills(cwd, skills = PROJECT_SKILLS) {
   for (const [name, description] of Object.entries(skills)) {
     const dir = path.join(cwd, '.claude', 'skills', name);
     fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(path.join(dir, 'SKILL.md'), `---\nname: ${name}\ndescription: ${description}\n---\n\n# ${name}\n\nFixture skill for the skill-scout e2e suite. It has no instructions.\n`);
+    fs.writeFileSync(path.join(dir, 'SKILL.md'), `---\nname: ${name}\ndescription: ${description}\n---\n\n# ${name}\n\nFixture skill for the singular e2e suite. It has no instructions.\n`);
     names.push(name);
   }
   return names;
@@ -110,19 +111,19 @@ export function makeWorld(caseDir, label, { cwd = 'next', config = {}, gitHead =
   } else {
     throw new Error(`makeWorld: unknown cwd kind ${cwd}`);
   }
-  if (isInside(home, dir)) throw new Error(`makeWorld: home ${home} is inside cwd ${dir}; the hook would fall back to the real ~/.claude/skill-scout`);
+  if (isInside(home, dir)) throw new Error(`makeWorld: home ${home} is inside cwd ${dir}; the hook would fall back to the real ~/.claude/singular`);
   let seeded = [];
   if (projectSkills) {
     if (!ownsCwd) throw new Error(`makeWorld: projectSkills can only be seeded into a temp cwd, not ${dir}`);
     seeded = writeProjectSkills(dir, projectSkills === true ? PROJECT_SKILLS : projectSkills);
   }
-  return { label, base, home, cwd: dir, env: { SKILL_SCOUT_HOME: home }, ownsCwd, projectSkills: seeded };
+  return { label, base, home, cwd: dir, env: { SINGULAR_HOME: home }, ownsCwd, projectSkills: seeded };
 }
 
 export function readLog(home) {
   try {
     return fs
-      .readFileSync(path.join(home, 'scout.log'), 'utf8')
+      .readFileSync(path.join(home, 'singular.log'), 'utf8')
       .split('\n')
       .filter(Boolean)
       .map((l) => {
@@ -188,12 +189,12 @@ export async function waitFor(fn, { timeoutMs = 10000, intervalMs = 250 } = {}) 
 
 /**
  * Run `node <ROOT>/bin/<script> args` (async, so a mock registry in this process can answer the child's requests).
- * env is merged over the caller's env minus every SKILL_SCOUT_* variable. Resolves {stdout, stderr, status, signal}.
+ * env is merged over the caller's env minus every SINGULAR_* variable. Resolves {stdout, stderr, status, signal}.
  */
 export function runNode(script, args = [], { env = {}, cwd = ROOT, input, timeoutMs = 120000 } = {}) {
   const file = path.isAbsolute(script) ? script : path.join(ROOT, 'bin', script);
   const baseEnv = { ...process.env };
-  for (const k of Object.keys(baseEnv)) if (k.startsWith('SKILL_SCOUT_')) delete baseEnv[k];
+  for (const k of Object.keys(baseEnv)) if (k.startsWith('SINGULAR_')) delete baseEnv[k];
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [file, ...args], { cwd, env: { ...baseEnv, ...env }, stdio: [typeof input === 'string' ? 'pipe' : 'ignore', 'pipe', 'pipe'] });
     const out = [];

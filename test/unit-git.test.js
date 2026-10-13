@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-const SCRATCH_ROOT = process.env.SKILL_SCOUT_TEST_TMP
+const SCRATCH_ROOT = process.env.SINGULAR_TEST_TMP
   || '/private/tmp/claude-501/-Users-nitya--superset-projects-claude-skills/cfa575e5-ae3c-4522-b59f-cd3623c88bf0/scratchpad';
 
 function mkTmp(label) {
@@ -20,7 +20,7 @@ function mkTmp(label) {
 
 // Throwaway state dir before the first import (lib/log.js reads process.env).
 const ROOT = mkTmp('state');
-process.env.SKILL_SCOUT_HOME = path.join(ROOT, 'scout-home');
+process.env.SINGULAR_HOME = path.join(ROOT, 'singular-home');
 process.env.HOME = path.join(ROOT, 'home');
 fs.mkdirSync(process.env.HOME, { recursive: true });
 
@@ -56,7 +56,7 @@ describe('childEnv: the environment every git / npx child gets (security review 
     XDG_CONFIG_HOME: 'x', SSL_CERT_FILE: 'x', SSL_CERT_DIR: 'x', NODE_EXTRA_CA_CERTS: 'x', NODE_TLS_REJECT_UNAUTHORIZED: '0', NODE_OPTIONS: 'x', NODE_PATH: 'x',
     npm_config_registry: 'x', npm_config_cache: 'x', npm_config_userconfig: 'x', npm_config_globalconfig: 'x', npm_config_prefix: 'x', NPM_CONFIG_REGISTRY: 'x', NPM_CONFIG_USERCONFIG: 'x',
     LD_PRELOAD: 'x', LD_LIBRARY_PATH: 'x', DYLD_INSERT_LIBRARIES: 'x', DYLD_LIBRARY_PATH: 'x',
-    SKILL_SCOUT_HOME: 'x', SKILL_SCOUT_GIT_BASE: 'x', SKILL_SCOUT_REGISTRY_BASE: 'x', SKILL_SCOUT_MODE: 'x', CLAUDE_PLUGIN_ROOT: 'x', CLAUDE_CONFIG_DIR: 'x',
+    SINGULAR_HOME: 'x', SINGULAR_GIT_BASE: 'x', SINGULAR_REGISTRY_BASE: 'x', SINGULAR_MODE: 'x', CLAUDE_PLUGIN_ROOT: 'x', CLAUDE_CONFIG_DIR: 'x',
     TMPDIR: 'x', TERM: 'x', SHELL: 'x', PWD: 'x', OLDPWD: 'x', EDITOR: 'x', DISABLE_TELEMETRY: '0', NO_UPDATE_NOTIFIER: '0', LC_ALL: 'de_DE', GIT_TERMINAL_PROMPT: '1', NO_COLOR: '',
   });
 
@@ -68,13 +68,13 @@ describe('childEnv: the environment every git / npx child gets (security review 
       if (k in CHILD_ENV_FIXED) continue;
       assert.equal(out[k], undefined, `${k} dropped`);
     }
-    assert.equal(Object.keys(out).filter((k) => /^(GIT_|npm_config_|NPM_CONFIG_|NODE_|SKILL_SCOUT_|CLAUDE_|LD_|DYLD_)/.test(k)).join(','), 'GIT_TERMINAL_PROMPT');
+    assert.equal(Object.keys(out).filter((k) => /^(GIT_|npm_config_|NPM_CONFIG_|NODE_|SINGULAR_|CLAUDE_|LD_|DYLD_)/.test(k)).join(','), 'GIT_TERMINAL_PROMPT');
   });
 
   test('the allowlist is PATH, HOME, USER/LOGNAME, LANG, the proxy variables and the Windows system variables; nothing that configures git, npm, node, TLS or the loader', () => {
     assert.ok(Object.isFrozen(CHILD_ENV_ALLOWLIST));
     for (const k of ['PATH', 'HOME', 'USER', 'LOGNAME', 'LANG', 'HTTP_PROXY', 'HTTPS_PROXY', 'NO_PROXY', 'ALL_PROXY', 'http_proxy', 'https_proxy', 'no_proxy', 'all_proxy', 'SYSTEMROOT', 'SystemRoot', 'USERPROFILE', 'APPDATA', 'LOCALAPPDATA', 'PATHEXT', 'COMSPEC', 'TEMP', 'TMP']) assert.ok(CHILD_ENV_ALLOWLIST.includes(k), k);
-    for (const k of CHILD_ENV_ALLOWLIST) assert.ok(!/^(GIT_|npm_config_|NPM_CONFIG_|NODE_|SSL_|LD_|DYLD_|XDG_|SKILL_SCOUT_|CLAUDE_)/.test(k) && k !== 'TMPDIR', `${k} must not be allowlisted`);
+    for (const k of CHILD_ENV_ALLOWLIST) assert.ok(!/^(GIT_|npm_config_|NPM_CONFIG_|NODE_|SSL_|LD_|DYLD_|XDG_|SINGULAR_|CLAUDE_)/.test(k) && k !== 'TMPDIR', `${k} must not be allowlisted`);
     assert.deepEqual(CHILD_ENV_FIXED, { GIT_TERMINAL_PROMPT: '0', LC_ALL: 'C', NO_COLOR: '1' });
     assert.ok(Object.isFrozen(CHILD_ENV_FIXED));
   });
@@ -108,14 +108,14 @@ describe('childEnv: the environment every git / npx child gets (security review 
 // ---------------------------------------------------------------------------
 
 describe('gitBase / repoUrl', () => {
-  test('github.com by default; only a local SKILL_SCOUT_GIT_BASE seam (outside the project) replaces it', () => {
+  test('github.com by default; only a local SINGULAR_GIT_BASE seam (outside the project) replaces it', () => {
     assert.equal(GITHUB_BASE, 'https://github.com');
     assert.equal(gitBase({}), 'https://github.com');
     assert.equal(repoUrl('anthropics', 'skills', {}), 'https://github.com/anthropics/skills');
-    assert.equal(repoUrl('a', 'b', { SKILL_SCOUT_GIT_BASE: '/abs/base/' }), '/abs/base/a/b');
-    assert.equal(repoUrl('a', 'b', { SKILL_SCOUT_GIT_BASE: 'file:///abs/base/' }), 'file:///abs/base/a/b');
-    assert.equal(repoUrl('a', 'b', { SKILL_SCOUT_GIT_BASE: 'https://evil.example' }), 'https://github.com/a/b', 'a remote base is never honoured');
-    assert.equal(repoUrl('a', 'b', { SKILL_SCOUT_GIT_BASE: 'relative/base' }), 'https://github.com/a/b');
+    assert.equal(repoUrl('a', 'b', { SINGULAR_GIT_BASE: '/abs/base/' }), '/abs/base/a/b');
+    assert.equal(repoUrl('a', 'b', { SINGULAR_GIT_BASE: 'file:///abs/base/' }), 'file:///abs/base/a/b');
+    assert.equal(repoUrl('a', 'b', { SINGULAR_GIT_BASE: 'https://evil.example' }), 'https://github.com/a/b', 'a remote base is never honoured');
+    assert.equal(repoUrl('a', 'b', { SINGULAR_GIT_BASE: 'relative/base' }), 'https://github.com/a/b');
   });
 });
 
@@ -210,17 +210,17 @@ describe('cloneAtSha (faked execFile)', () => {
     assert.match(c.message, /^git checkout failed \(exit 1\): error: pathspec — could not fetch a\/b at /);
   });
 
-  test('the SKILL_SCOUT_GIT_BASE seam changes the remote URL only (and only for a local base)', async () => {
+  test('the SINGULAR_GIT_BASE seam changes the remote URL only (and only for a local base)', async () => {
     const base = path.join(ROOT, 'seam-base');
     const dest = path.join(ROOT, 'clone-seam');
     fs.mkdirSync(dest, { recursive: true });
     const exec = fakeExec();
-    const r = await cloneAtSha({ owner: 'o', repo: 'r', sha: SHA, dest, execFileImpl: exec.impl, env: { SKILL_SCOUT_GIT_BASE: `file://${base}` } });
+    const r = await cloneAtSha({ owner: 'o', repo: 'r', sha: SHA, dest, execFileImpl: exec.impl, env: { SINGULAR_GIT_BASE: `file://${base}` } });
     assert.equal(r.url, `file://${base}/o/r`);
     assert.deepEqual(exec.calls[1].args, ['remote', 'add', 'origin', `file://${base}/o/r`]);
-    assert.equal(exec.calls[1].opts.env.SKILL_SCOUT_GIT_BASE, undefined, 'the seam variable itself is not forwarded');
+    assert.equal(exec.calls[1].opts.env.SINGULAR_GIT_BASE, undefined, 'the seam variable itself is not forwarded');
     const remote = fakeExec();
-    await cloneAtSha({ owner: 'o', repo: 'r', sha: SHA, dest, execFileImpl: remote.impl, env: { SKILL_SCOUT_GIT_BASE: 'https://evil.example' } });
+    await cloneAtSha({ owner: 'o', repo: 'r', sha: SHA, dest, execFileImpl: remote.impl, env: { SINGULAR_GIT_BASE: 'https://evil.example' } });
     assert.deepEqual(remote.calls[1].args, ['remote', 'add', 'origin', 'https://github.com/o/r']);
   });
 });

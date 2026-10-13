@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// test/e2e/run.mjs — live end-to-end runner for skill-scout (zero dependencies, Node >= 20).
+// test/e2e/run.mjs — live end-to-end runner for singular (zero dependencies, Node >= 20).
 //
 //   node test/e2e/run.mjs [--list] [--filter <tag>[,<tag>]] [--case <substring>[,<substring>]] [--model <haiku|sonnet>]
 //                         [--max-cost <usd>] [--no-sonnet] [--keep] [--tmp <dir>]
@@ -9,15 +9,15 @@
 // PASS / FAIL / SKIP per case with the reason, INFO lines for non-asserting observations, the cost of every
 // case and the total. Exit 1 when any case FAILs or when the global state fingerprint changed.
 //
-// Isolation guarantees (enforced here, not by the cases): every case gets a fresh SKILL_SCOUT_HOME outside its
+// Isolation guarantees (enforced here, not by the cases): every case gets a fresh SINGULAR_HOME outside its
 // cwd; the plugin is loaded with --plugin-dir --setting-sources project --strict-mcp-config; the real
 // ~/.claude/settings*.json, ~/.claude/plugins/installed_plugins.json, ~/.claude/skills listing AND the real
-// ~/.claude/skill-scout state are fingerprinted before and after; ~/.claude/projects/<temp cwd> directories that a
+// ~/.claude/singular state are fingerprinted before and after; ~/.claude/projects/<temp cwd> directories that a
 // persisted or subagent run creates are removed (only those derived from this run's temp cwds).
 //
-// Env: E2E_MAX_COST_USD (global cap, default 3), SKILL_SCOUT_E2E_MODEL (default haiku), SKILL_SCOUT_E2E_BUDGET
-//      (per-call --max-budget-usd, default 0.5), SKILL_SCOUT_E2E_TMP (work dir, default $TMPDIR/skill-scout-e2e),
-//      SKILL_SCOUT_E2E_SONNET=0 (skip cases tagged sonnet).
+// Env: E2E_MAX_COST_USD (global cap, default 3), SINGULAR_E2E_MODEL (default haiku), SINGULAR_E2E_BUDGET
+//      (per-call --max-budget-usd, default 0.5), SINGULAR_E2E_TMP (work dir, default $TMPDIR/singular-e2e),
+//      SINGULAR_E2E_SONNET=0 (skip cases tagged sonnet).
 // Cost caps: the global cap SKIPs a case that would exceed it and throws SKIP inside a case that reaches it; a case's
 // own costCapUsd bounds every call it makes (--max-budget-usd = min(budget, cap - spent so far, >= 0.01)) and reaching
 // it mid-case, or ending above it, is a FAIL of that case (a model loop must not starve the later cases).
@@ -34,13 +34,13 @@ import { Checker } from './lib/check.mjs';
 import { CaseFailure, SkipError } from './lib/errors.mjs';
 import { buildGitBase } from './lib/gitbase.mjs';
 import { startRegistry } from './lib/registry.mjs';
-import { diffSnapshots, globalSnapshot, scoutSnapshot } from './lib/snapshot.mjs';
+import { diffSnapshots, globalSnapshot, singularSnapshot } from './lib/snapshot.mjs';
 import { cacheEntry, cacheValues, makeWorld, projectDirName, readLog, readJsonFile, realHome, runNode, waitFor, writeConfig } from './lib/world.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 
 function parseArgv(argv) {
-  const out = { list: false, filter: [], cases: [], model: process.env.SKILL_SCOUT_E2E_MODEL || 'haiku', maxCost: Number(process.env.E2E_MAX_COST_USD) || 3, sonnet: process.env.SKILL_SCOUT_E2E_SONNET !== '0', keep: false, tmp: process.env.SKILL_SCOUT_E2E_TMP || null, help: false, budget: Number(process.env.SKILL_SCOUT_E2E_BUDGET) || 0.5 };
+  const out = { list: false, filter: [], cases: [], model: process.env.SINGULAR_E2E_MODEL || 'haiku', maxCost: Number(process.env.E2E_MAX_COST_USD) || 3, sonnet: process.env.SINGULAR_E2E_SONNET !== '0', keep: false, tmp: process.env.SINGULAR_E2E_TMP || null, help: false, budget: Number(process.env.SINGULAR_E2E_BUDGET) || 0.5 };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--list') out.list = true;
@@ -122,14 +122,14 @@ async function main() {
   }
   const claudeVersion = spawnSync('claude', ['--version'], { encoding: 'utf8' }).stdout.trim();
 
-  const workRoot = args.tmp ? path.resolve(args.tmp) : path.join(os.tmpdir(), 'skill-scout-e2e');
+  const workRoot = args.tmp ? path.resolve(args.tmp) : path.join(os.tmpdir(), 'singular-e2e');
   const runId = new Date().toISOString().replace(/[:.]/g, '-');
   const runDir = path.join(workRoot, runId);
   fs.mkdirSync(runDir, { recursive: true });
-  process.stdout.write(`skill-scout e2e  plugin=${ROOT}  claude=${claudeVersion}  model=${args.model}  cap=${usd(args.maxCost)}  work=${runDir}\n`);
+  process.stdout.write(`singular e2e  plugin=${ROOT}  claude=${claudeVersion}  model=${args.model}  cap=${usd(args.maxCost)}  work=${runDir}\n`);
 
-  const before = { global: globalSnapshot(), scout: scoutSnapshot() };
-  fs.writeFileSync(path.join(runDir, 'before.txt'), `${before.global}\n---\n${before.scout}\n`);
+  const before = { global: globalSnapshot(), singular: singularSnapshot() };
+  fs.writeFileSync(path.join(runDir, 'before.txt'), `${before.global}\n---\n${before.singular}\n`);
 
   // --- shared fixtures: one git base for the whole run (outside every cwd), rebuilt per run
   const gitBase = await buildGitBase(path.join(runDir, 'gitbase'));
@@ -230,7 +230,7 @@ async function main() {
     };
 
     try {
-      if (!args.sonnet && c.tags.includes('sonnet')) throw new SkipError('sonnet case skipped (--no-sonnet / SKILL_SCOUT_E2E_SONNET=0)');
+      if (!args.sonnet && c.tags.includes('sonnet')) throw new SkipError('sonnet case skipped (--no-sonnet / SINGULAR_E2E_SONNET=0)');
       if (totalCost + c.costCapUsd > args.maxCost) throw new SkipError(`would exceed the global cost cap (${usd(totalCost)} spent + ${usd(c.costCapUsd)} cap > ${usd(args.maxCost)})`);
       await c.run(ctx);
       if (caseCost > c.costCapUsd) checker.failures.push(`case cost ${usd(caseCost)} exceeded its declared cap ${usd(c.costCapUsd)} (the last call overshot its --max-budget-usd)`);
@@ -272,19 +272,19 @@ async function main() {
   }
 
   // --- global state must be untouched
-  const after = { global: globalSnapshot(), scout: scoutSnapshot() };
-  fs.writeFileSync(path.join(runDir, 'after.txt'), `${after.global}\n---\n${after.scout}\n`);
+  const after = { global: globalSnapshot(), singular: singularSnapshot() };
+  fs.writeFileSync(path.join(runDir, 'after.txt'), `${after.global}\n---\n${after.singular}\n`);
   let stateOk = true;
   if (after.global !== before.global) {
     stateOk = false;
     process.stdout.write('FAIL  global state changed (~/.claude/settings*.json, installed_plugins.json or ~/.claude/skills):\n');
     for (const l of diffSnapshots(before.global, after.global)) process.stdout.write(`      ${l}\n`);
   } else process.stdout.write('PASS  ~/.claude/settings*.json, installed_plugins.json and ~/.claude/skills unchanged\n');
-  if (after.scout !== before.scout) {
+  if (after.singular !== before.singular) {
     stateOk = false;
-    process.stdout.write('FAIL  the real ~/.claude/skill-scout state changed (isolation leak):\n');
-    for (const l of diffSnapshots(before.scout, after.scout)) process.stdout.write(`      ${l}\n`);
-  } else process.stdout.write('PASS  real ~/.claude/skill-scout untouched\n');
+    process.stdout.write('FAIL  the real ~/.claude/singular state changed (isolation leak):\n');
+    for (const l of diffSnapshots(before.singular, after.singular)) process.stdout.write(`      ${l}\n`);
+  } else process.stdout.write('PASS  real ~/.claude/singular untouched\n');
 
   const totalLine = `e2e: ${summary.pass} passed, ${summary.fail} failed, ${summary.skip} skipped; total cost ${usd(totalCost)} (cap ${usd(args.maxCost)}); artifacts: ${runDir}`;
   process.stdout.write(`\n${totalLine}\n`);

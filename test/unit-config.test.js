@@ -2,7 +2,7 @@
 //
 // Unit tests for lib/config.js: DEFAULTS, validateConfig (every type class), loadConfig (first-run
 // creation, merge, unknown keys, corrupt JSON, EISDIR/ENOTDIR/EACCES), the environment rules
-// (SKILL_SCOUT_MODE can only lower, SKILL_SCOUT_HOME absolute-only), hardenEnv, the four test seams
+// (SINGULAR_MODE can only lower, SINGULAR_HOME absolute-only), hardenEnv, the four test seams
 // (docs/testing.md) and isAllowlisted in every form. No network, no subprocesses.
 
 import { test, describe, after } from 'node:test';
@@ -11,7 +11,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-const SCRATCH_ROOT = process.env.SKILL_SCOUT_TEST_TMP
+const SCRATCH_ROOT = process.env.SINGULAR_TEST_TMP
   || '/private/tmp/claude-501/-Users-nitya--superset-projects-claude-skills/cfa575e5-ae3c-4522-b59f-cd3623c88bf0/scratchpad';
 
 function mkTmp(label) {
@@ -22,7 +22,7 @@ function mkTmp(label) {
 
 // Point the process at a throwaway state dir before the first import (lib/log.js reads process.env).
 const ROOT = mkTmp('state');
-process.env.SKILL_SCOUT_HOME = path.join(ROOT, 'scout-home');
+process.env.SINGULAR_HOME = path.join(ROOT, 'singular-home');
 process.env.HOME = path.join(ROOT, 'home');
 fs.mkdirSync(process.env.HOME, { recursive: true });
 
@@ -72,7 +72,7 @@ describe('DEFAULTS / MODES / SEAM_VARS', () => {
   test('MODES is the privilege ladder off < local < suggest < auto; SEAM_VARS lists the four test seams', () => {
     assert.ok(Object.isFrozen(MODES));
     assert.deepEqual([...MODES], ['off', 'local', 'suggest', 'auto']);
-    assert.deepEqual([...SEAM_VARS], ['SKILL_SCOUT_REGISTRY_BASE', 'SKILL_SCOUT_GIT_BASE', 'SKILL_SCOUT_SKILLS_DIR', 'SKILL_SCOUT_TEST_ALLOW_AUTO']);
+    assert.deepEqual([...SEAM_VARS], ['SINGULAR_REGISTRY_BASE', 'SINGULAR_GIT_BASE', 'SINGULAR_SKILLS_DIR', 'SINGULAR_TEST_ALLOW_AUTO']);
   });
 });
 
@@ -177,26 +177,26 @@ describe('validateConfig (pure)', () => {
 describe('homeDir / configPath / defaultHomeDir / redirectedHome', () => {
   test('redirectedHome: null when unset, blank or relative; resolved absolute path otherwise (trimmed)', () => {
     assert.equal(redirectedHome({}), null);
-    assert.equal(redirectedHome({ SKILL_SCOUT_HOME: '' }), null);
-    assert.equal(redirectedHome({ SKILL_SCOUT_HOME: '   ' }), null);
-    assert.equal(redirectedHome({ SKILL_SCOUT_HOME: '.scout' }), null);
-    assert.equal(redirectedHome({ SKILL_SCOUT_HOME: 'a/../../b' }), null);
-    assert.equal(redirectedHome({ SKILL_SCOUT_HOME: `  ${path.join(ROOT, 'x', '..', 'y')}  ` }), path.join(ROOT, 'y'));
+    assert.equal(redirectedHome({ SINGULAR_HOME: '' }), null);
+    assert.equal(redirectedHome({ SINGULAR_HOME: '   ' }), null);
+    assert.equal(redirectedHome({ SINGULAR_HOME: '.scout' }), null);
+    assert.equal(redirectedHome({ SINGULAR_HOME: 'a/../../b' }), null);
+    assert.equal(redirectedHome({ SINGULAR_HOME: `  ${path.join(ROOT, 'x', '..', 'y')}  ` }), path.join(ROOT, 'y'));
   });
 
-  test('homeDir creates the directory (mkdir -p) and falls back to <HOME>/.claude/skill-scout; mkdir failure still yields the path', () => {
+  test('homeDir creates the directory (mkdir -p) and falls back to <HOME>/.claude/singular; mkdir failure still yields the path', () => {
     const dir = path.join(ROOT, 'deep', 'er', 'home');
-    assert.equal(homeDir({ SKILL_SCOUT_HOME: dir }), dir);
+    assert.equal(homeDir({ SINGULAR_HOME: dir }), dir);
     assert.ok(fs.statSync(dir).isDirectory());
-    assert.equal(homeDir({ HOME: path.join(ROOT, 'fakehome') }), path.join(ROOT, 'fakehome', '.claude', 'skill-scout'));
-    assert.ok(fs.existsSync(path.join(ROOT, 'fakehome', '.claude', 'skill-scout')));
-    assert.equal(configPath({ SKILL_SCOUT_HOME: dir }), path.join(dir, 'config.json'));
-    assert.equal(defaultHomeDir({ HOME: '/h', SKILL_SCOUT_HOME: dir }), path.join('/h', '.claude', 'skill-scout'), 'defaultHomeDir ignores the redirect');
+    assert.equal(homeDir({ HOME: path.join(ROOT, 'fakehome') }), path.join(ROOT, 'fakehome', '.claude', 'singular'));
+    assert.ok(fs.existsSync(path.join(ROOT, 'fakehome', '.claude', 'singular')));
+    assert.equal(configPath({ SINGULAR_HOME: dir }), path.join(dir, 'config.json'));
+    assert.equal(defaultHomeDir({ HOME: '/h', SINGULAR_HOME: dir }), path.join('/h', '.claude', 'singular'), 'defaultHomeDir ignores the redirect');
     // a file in the way: mkdir fails (ENOTDIR) but the path is still returned
     const file = path.join(ROOT, 'a-file');
     fs.writeFileSync(file, 'x');
     const under = path.join(file, 'sub');
-    assert.equal(homeDir({ SKILL_SCOUT_HOME: under }), under);
+    assert.equal(homeDir({ SINGULAR_HOME: under }), under);
     assert.ok(!fs.existsSync(under));
   });
 });
@@ -205,7 +205,7 @@ describe('homeDir / configPath / defaultHomeDir / redirectedHome', () => {
 
 describe('loadConfig', () => {
   test('first run: config.json is created from DEFAULTS (pretty JSON + newline) and the result has the non-enumerable diagnostics', () => {
-    const env = { SKILL_SCOUT_HOME: path.join(ROOT, 'first-run') };
+    const env = { SINGULAR_HOME: path.join(ROOT, 'first-run') };
     const c = loadConfig(env);
     assert.deepEqual(plain(c), plain(DEFAULTS));
     const text = fs.readFileSync(configPath(env), 'utf8');
@@ -221,12 +221,12 @@ describe('loadConfig', () => {
     // the default location is reported as not redirected
     const d = loadConfig({ HOME: path.join(ROOT, 'home-default') });
     assert.equal(d.redirected, false);
-    assert.ok(fs.existsSync(path.join(ROOT, 'home-default', '.claude', 'skill-scout', 'config.json')));
+    assert.ok(fs.existsSync(path.join(ROOT, 'home-default', '.claude', 'singular', 'config.json')));
   });
 
   test('an existing file is never overwritten by the first-run write (flag wx), even when it is partial', () => {
-    const env = { SKILL_SCOUT_HOME: path.join(ROOT, 'partial') };
-    fs.mkdirSync(env.SKILL_SCOUT_HOME, { recursive: true });
+    const env = { SINGULAR_HOME: path.join(ROOT, 'partial') };
+    fs.mkdirSync(env.SINGULAR_HOME, { recursive: true });
     fs.writeFileSync(configPath(env), '{"mode":"local"}');
     const c = loadConfig(env);
     assert.equal(c.mode, 'local');
@@ -235,8 +235,8 @@ describe('loadConfig', () => {
   });
 
   test('merge: file values win, unknown keys survive, wrong types warn, mode is normalized', () => {
-    const env = { SKILL_SCOUT_HOME: path.join(ROOT, 'merge') };
-    fs.mkdirSync(env.SKILL_SCOUT_HOME, { recursive: true });
+    const env = { SINGULAR_HOME: path.join(ROOT, 'merge') };
+    fs.mkdirSync(env.SINGULAR_HOME, { recursive: true });
     fs.writeFileSync(configPath(env), JSON.stringify({ mode: 'LOCAL', allowlist: ['Me'], maxCandidates: 5, prefetch: 'nope', extra: [1] }));
     const c = loadConfig(env);
     assert.equal(c.mode, 'local');
@@ -249,8 +249,8 @@ describe('loadConfig', () => {
   });
 
   test('corrupt JSON -> defaults + "not valid JSON" warning; a JSON array -> defaults + "not a JSON object"; file left alone', () => {
-    const env = { SKILL_SCOUT_HOME: path.join(ROOT, 'corrupt') };
-    fs.mkdirSync(env.SKILL_SCOUT_HOME, { recursive: true });
+    const env = { SINGULAR_HOME: path.join(ROOT, 'corrupt') };
+    fs.mkdirSync(env.SINGULAR_HOME, { recursive: true });
     fs.writeFileSync(configPath(env), '{ "mode": ');
     const c = loadConfig(env);
     assert.deepEqual(plain(c), plain(DEFAULTS));
@@ -266,14 +266,14 @@ describe('loadConfig', () => {
   test('unreadable config.json (EISDIR, ENOTDIR, EACCES) warns with the code, uses defaults and creates nothing', (t) => {
     const eisdir = path.join(ROOT, 'eisdir');
     fs.mkdirSync(path.join(eisdir, 'config.json'), { recursive: true });
-    const c1 = loadConfig({ SKILL_SCOUT_HOME: eisdir });
+    const c1 = loadConfig({ SINGULAR_HOME: eisdir });
     assert.deepEqual(c1.warnings, ['config.json unreadable (EISDIR); using defaults']);
     assert.ok(fs.statSync(path.join(eisdir, 'config.json')).isDirectory());
     assert.equal(c1.mode, 'suggest');
 
     const file = path.join(ROOT, 'enotdir-file');
     fs.writeFileSync(file, 'x');
-    const c2 = loadConfig({ SKILL_SCOUT_HOME: path.join(file, 'home') });
+    const c2 = loadConfig({ SINGULAR_HOME: path.join(file, 'home') });
     assert.deepEqual(c2.warnings, ['config.json unreadable (ENOTDIR); using defaults']);
     assert.equal(fs.readFileSync(file, 'utf8'), 'x', 'the file in the way is untouched');
 
@@ -283,7 +283,7 @@ describe('loadConfig', () => {
     fs.writeFileSync(path.join(eacces, 'config.json'), JSON.stringify({ mode: 'local' }));
     fs.chmodSync(path.join(eacces, 'config.json'), 0o000);
     try {
-      const c3 = loadConfig({ SKILL_SCOUT_HOME: eacces });
+      const c3 = loadConfig({ SINGULAR_HOME: eacces });
       assert.deepEqual(c3.warnings, ['config.json unreadable (EACCES); using defaults']);
       assert.equal(c3.mode, 'suggest', 'the unreadable "local" is not applied');
     } finally {
@@ -291,62 +291,62 @@ describe('loadConfig', () => {
     }
   });
 
-  test('SKILL_SCOUT_MODE: every lowering transition is honoured, every raise is refused with a warning, case/whitespace tolerated, invalid values warn', () => {
-    const env = { SKILL_SCOUT_HOME: path.join(ROOT, 'env-mode') };
-    fs.mkdirSync(env.SKILL_SCOUT_HOME, { recursive: true });
+  test('SINGULAR_MODE: every lowering transition is honoured, every raise is refused with a warning, case/whitespace tolerated, invalid values warn', () => {
+    const env = { SINGULAR_HOME: path.join(ROOT, 'env-mode') };
+    fs.mkdirSync(env.SINGULAR_HOME, { recursive: true });
     for (const fileMode of MODES) {
-      // "auto" in a redirected home is downgraded to suggest first; use SKILL_SCOUT_TEST_ALLOW_AUTO to test the real ladder
+      // "auto" in a redirected home is downgraded to suggest first; use SINGULAR_TEST_ALLOW_AUTO to test the real ladder
       fs.writeFileSync(configPath(env), JSON.stringify({ mode: fileMode }));
-      const base = { ...env, SKILL_SCOUT_TEST_ALLOW_AUTO: '1' };
+      const base = { ...env, SINGULAR_TEST_ALLOW_AUTO: '1' };
       for (const envMode of MODES) {
-        const c = loadConfig({ ...base, SKILL_SCOUT_MODE: envMode });
+        const c = loadConfig({ ...base, SINGULAR_MODE: envMode });
         const lowering = MODES.indexOf(envMode) <= MODES.indexOf(fileMode);
         assert.equal(c.mode, lowering ? envMode : fileMode, `file=${fileMode} env=${envMode}`);
         assert.equal(c.fileMode, fileMode);
-        const raiseWarn = c.warnings.find((w) => w.startsWith('SKILL_SCOUT_MODE='));
+        const raiseWarn = c.warnings.find((w) => w.startsWith('SINGULAR_MODE='));
         if (lowering) assert.equal(raiseWarn, undefined, `no warning for file=${fileMode} env=${envMode}`);
-        else assert.equal(raiseWarn, `SKILL_SCOUT_MODE=${envMode} ignored (the environment can only lower the mode below "${fileMode}")`);
+        else assert.equal(raiseWarn, `SINGULAR_MODE=${envMode} ignored (the environment can only lower the mode below "${fileMode}")`);
       }
     }
     fs.writeFileSync(configPath(env), JSON.stringify({ mode: 'suggest' }));
-    assert.equal(loadConfig({ ...env, SKILL_SCOUT_MODE: '  OFF ' }).mode, 'off');
-    assert.equal(loadConfig({ ...env, SKILL_SCOUT_MODE: 'Local' }).mode, 'local');
-    const bad = loadConfig({ ...env, SKILL_SCOUT_MODE: 'sometimes' });
+    assert.equal(loadConfig({ ...env, SINGULAR_MODE: '  OFF ' }).mode, 'off');
+    assert.equal(loadConfig({ ...env, SINGULAR_MODE: 'Local' }).mode, 'local');
+    const bad = loadConfig({ ...env, SINGULAR_MODE: 'sometimes' });
     assert.equal(bad.mode, 'suggest');
-    assert.deepEqual(bad.warnings, ['SKILL_SCOUT_MODE=sometimes ignored (not one of off|local|suggest|auto)']);
-    assert.deepEqual(loadConfig({ ...env, SKILL_SCOUT_MODE: '' }).warnings, [], 'empty value is ignored silently');
+    assert.deepEqual(bad.warnings, ['SINGULAR_MODE=sometimes ignored (not one of off|local|suggest|auto)']);
+    assert.deepEqual(loadConfig({ ...env, SINGULAR_MODE: '' }).warnings, [], 'empty value is ignored silently');
   });
 
-  test('mode "auto": honoured in the default home, downgraded (with a warning) in a redirect, restored only by the SKILL_SCOUT_TEST_ALLOW_AUTO=1 seam', () => {
+  test('mode "auto": honoured in the default home, downgraded (with a warning) in a redirect, restored only by the SINGULAR_TEST_ALLOW_AUTO=1 seam', () => {
     const home = path.join(ROOT, 'auto-home');
-    fs.mkdirSync(path.join(home, '.claude', 'skill-scout'), { recursive: true });
-    fs.writeFileSync(path.join(home, '.claude', 'skill-scout', 'config.json'), JSON.stringify({ mode: 'auto' }));
+    fs.mkdirSync(path.join(home, '.claude', 'singular'), { recursive: true });
+    fs.writeFileSync(path.join(home, '.claude', 'singular', 'config.json'), JSON.stringify({ mode: 'auto' }));
     const def = loadConfig({ HOME: home });
     assert.equal(def.mode, 'auto');
     assert.deepEqual(def.warnings, []);
     const redirected = path.join(ROOT, 'auto-redirect');
     fs.mkdirSync(redirected, { recursive: true });
     fs.writeFileSync(path.join(redirected, 'config.json'), JSON.stringify({ mode: 'auto' }));
-    const r = loadConfig({ HOME: home, SKILL_SCOUT_HOME: redirected });
+    const r = loadConfig({ HOME: home, SINGULAR_HOME: redirected });
     assert.equal(r.mode, 'suggest');
     assert.equal(r.fileMode, 'auto');
-    assert.deepEqual(r.warnings, [`mode "auto" ignored: it is honoured only in the default ${path.join(home, '.claude', 'skill-scout')}/config.json, not in a SKILL_SCOUT_HOME redirect; using "suggest"`]);
-    const seamed = loadConfig({ HOME: home, SKILL_SCOUT_HOME: redirected, SKILL_SCOUT_TEST_ALLOW_AUTO: '1' });
+    assert.deepEqual(r.warnings, [`mode "auto" ignored: it is honoured only in the default ${path.join(home, '.claude', 'singular')}/config.json, not in a SINGULAR_HOME redirect; using "suggest"`]);
+    const seamed = loadConfig({ HOME: home, SINGULAR_HOME: redirected, SINGULAR_TEST_ALLOW_AUTO: '1' });
     assert.equal(seamed.mode, 'auto');
     assert.equal(seamed.warnings.length, 1);
-    assert.match(seamed.warnings[0], /^TEST SEAM: SKILL_SCOUT_TEST_ALLOW_AUTO=1 honours mode "auto" in the redirected .*\(test-only; never set this in a real shell\)$/);
-    assert.equal(loadConfig({ HOME: home, SKILL_SCOUT_HOME: redirected, SKILL_SCOUT_TEST_ALLOW_AUTO: 'true' }).mode, 'suggest', 'only the literal "1"');
-    assert.equal(loadConfig({ HOME: home, SKILL_SCOUT_HOME: redirected, SKILL_SCOUT_TEST_ALLOW_AUTO: '1', SKILL_SCOUT_MODE: 'local' }).mode, 'local', 'still lowerable');
+    assert.match(seamed.warnings[0], /^TEST SEAM: SINGULAR_TEST_ALLOW_AUTO=1 honours mode "auto" in the redirected .*\(test-only; never set this in a real shell\)$/);
+    assert.equal(loadConfig({ HOME: home, SINGULAR_HOME: redirected, SINGULAR_TEST_ALLOW_AUTO: 'true' }).mode, 'suggest', 'only the literal "1"');
+    assert.equal(loadConfig({ HOME: home, SINGULAR_HOME: redirected, SINGULAR_TEST_ALLOW_AUTO: '1', SINGULAR_MODE: 'local' }).mode, 'local', 'still lowerable');
   });
 
-  test('SKILL_SCOUT_HOME: a relative value is ignored with a warning and the default home is used; whitespace-only is treated as unset', () => {
+  test('SINGULAR_HOME: a relative value is ignored with a warning and the default home is used; whitespace-only is treated as unset', () => {
     const home = path.join(ROOT, 'rel-home');
-    const c = loadConfig({ HOME: home, SKILL_SCOUT_HOME: 'rel/dir' });
-    assert.equal(c.path, path.join(home, '.claude', 'skill-scout', 'config.json'));
+    const c = loadConfig({ HOME: home, SINGULAR_HOME: 'rel/dir' });
+    assert.equal(c.path, path.join(home, '.claude', 'singular', 'config.json'));
     assert.equal(c.redirected, false);
-    assert.deepEqual(c.warnings, ['SKILL_SCOUT_HOME=rel/dir ignored (must be an absolute path)']);
+    assert.deepEqual(c.warnings, ['SINGULAR_HOME=rel/dir ignored (must be an absolute path)']);
     assert.ok(!fs.existsSync(path.join(process.cwd(), 'rel', 'dir')), 'nothing created relative to cwd');
-    const blank = loadConfig({ HOME: home, SKILL_SCOUT_HOME: '   ' });
+    const blank = loadConfig({ HOME: home, SINGULAR_HOME: '   ' });
     assert.deepEqual(blank.warnings, []);
     assert.equal(blank.redirected, false);
   });
@@ -356,7 +356,7 @@ describe('loadConfig', () => {
 
 describe('hardenEnv', () => {
   test('is pure (input untouched), returns {env, warnings, seams}; nothing to harden -> identical copy and no warnings', () => {
-    const input = { HOME: '/tmp/fake-home', SKILL_SCOUT_HOME: path.join(ROOT, 'abs'), OTHER: '1' };
+    const input = { HOME: '/tmp/fake-home', SINGULAR_HOME: path.join(ROOT, 'abs'), OTHER: '1' };
     const frozen = JSON.stringify(input);
     const h = hardenEnv(input, { cwd: path.join(ROOT, 'proj') });
     assert.equal(JSON.stringify(input), frozen);
@@ -367,25 +367,25 @@ describe('hardenEnv', () => {
     assert.deepEqual(Object.keys(h).sort(), ['env', 'seams', 'warnings']);
   });
 
-  test('drops a relative SKILL_SCOUT_HOME, one inside cwd (also via /tmp -> /private/tmp aliasing), and a foreign HOME inside cwd', () => {
+  test('drops a relative SINGULAR_HOME, one inside cwd (also via /tmp -> /private/tmp aliasing), and a foreign HOME inside cwd', () => {
     const proj = path.join(ROOT, 'harden-proj');
     fs.mkdirSync(proj, { recursive: true });
-    const rel = hardenEnv({ SKILL_SCOUT_HOME: '.scout' }, { cwd: proj });
-    assert.equal(rel.env.SKILL_SCOUT_HOME, undefined);
-    assert.deepEqual(rel.warnings, ['SKILL_SCOUT_HOME=.scout ignored (must be an absolute path)']);
-    const inside = hardenEnv({ SKILL_SCOUT_HOME: path.join(proj, 'state') }, { cwd: proj });
-    assert.equal(inside.env.SKILL_SCOUT_HOME, undefined);
-    assert.deepEqual(inside.warnings, [`SKILL_SCOUT_HOME=${path.join(proj, 'state')} ignored (inside the project directory ${proj})`]);
+    const rel = hardenEnv({ SINGULAR_HOME: '.scout' }, { cwd: proj });
+    assert.equal(rel.env.SINGULAR_HOME, undefined);
+    assert.deepEqual(rel.warnings, ['SINGULAR_HOME=.scout ignored (must be an absolute path)']);
+    const inside = hardenEnv({ SINGULAR_HOME: path.join(proj, 'state') }, { cwd: proj });
+    assert.equal(inside.env.SINGULAR_HOME, undefined);
+    assert.deepEqual(inside.warnings, [`SINGULAR_HOME=${path.join(proj, 'state')} ignored (inside the project directory ${proj})`]);
     // the same directory is the cwd itself
-    assert.equal(hardenEnv({ SKILL_SCOUT_HOME: proj }, { cwd: proj }).env.SKILL_SCOUT_HOME, undefined);
+    assert.equal(hardenEnv({ SINGULAR_HOME: proj }, { cwd: proj }).env.SINGULAR_HOME, undefined);
     // a sibling that merely shares a prefix is NOT inside
     const sibling = `${proj}-sibling`;
-    assert.equal(hardenEnv({ SKILL_SCOUT_HOME: sibling }, { cwd: proj }).env.SKILL_SCOUT_HOME, sibling);
+    assert.equal(hardenEnv({ SINGULAR_HOME: sibling }, { cwd: proj }).env.SINGULAR_HOME, sibling);
     // macOS: /tmp is a symlink to /private/tmp; containment must see through it (documented pitfall in docs/testing.md)
     if (fs.existsSync('/tmp') && fs.lstatSync('/tmp').isSymbolicLink()) {
       const real = fs.realpathSync('/tmp');
-      const h = hardenEnv({ SKILL_SCOUT_HOME: path.join(real, 'scout-x') }, { cwd: '/tmp' });
-      assert.equal(h.env.SKILL_SCOUT_HOME, undefined, '/private/tmp/x is inside cwd /tmp');
+      const h = hardenEnv({ SINGULAR_HOME: path.join(real, 'singular-x') }, { cwd: '/tmp' });
+      assert.equal(h.env.SINGULAR_HOME, undefined, '/private/tmp/x is inside cwd /tmp');
       assert.match(h.warnings[0], /inside the project directory/);
     }
     const fakeHome = path.join(proj, 'fakehome');
@@ -394,26 +394,26 @@ describe('hardenEnv', () => {
     assert.ok(path.isAbsolute(h2.env.HOME));
     assert.match(h2.warnings[0], new RegExp(`^HOME=${fakeHome.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} ignored \\(inside the project directory .*\\); using `));
     // without cwd only the absolute-path rule applies
-    assert.equal(hardenEnv({ SKILL_SCOUT_HOME: path.join(proj, 'state') }).env.SKILL_SCOUT_HOME, path.join(proj, 'state'));
+    assert.equal(hardenEnv({ SINGULAR_HOME: path.join(proj, 'state') }).env.SINGULAR_HOME, path.join(proj, 'state'));
     assert.equal(hardenEnv({ HOME: fakeHome }).env.HOME, fakeHome);
   });
 
-  test('drops a SKILL_SCOUT_HOME that is an ANCESTOR of cwd (security review 2026-10-08: a checkout named cache or .claude would be the state dir); siblings and the real home stay', () => {
+  test('drops a SINGULAR_HOME that is an ANCESTOR of cwd (security review 2026-10-08: a checkout named cache or .claude would be the state dir); siblings and the real home stay', () => {
     const parent = path.join(ROOT, 'anc-root');
     const proj = path.join(parent, 'workspaces', 'cache');
     fs.mkdirSync(proj, { recursive: true });
     for (const anc of [path.join(parent, 'workspaces'), parent, '/']) {
-      const h = hardenEnv({ SKILL_SCOUT_HOME: anc }, { cwd: proj });
-      assert.equal(h.env.SKILL_SCOUT_HOME, undefined, anc);
-      assert.deepEqual(h.warnings, [`SKILL_SCOUT_HOME=${anc} ignored (an ancestor of the project directory ${proj})`], anc);
+      const h = hardenEnv({ SINGULAR_HOME: anc }, { cwd: proj });
+      assert.equal(h.env.SINGULAR_HOME, undefined, anc);
+      assert.deepEqual(h.warnings, [`SINGULAR_HOME=${anc} ignored (an ancestor of the project directory ${proj})`], anc);
     }
     const sibling = path.join(parent, 'workspaces', 'home');
-    assert.equal(hardenEnv({ SKILL_SCOUT_HOME: sibling }, { cwd: proj }).env.SKILL_SCOUT_HOME, sibling, 'a sibling (the e2e layout) is kept');
-    assert.deepEqual(hardenEnv({ SKILL_SCOUT_HOME: sibling }, { cwd: proj }).warnings, []);
+    assert.equal(hardenEnv({ SINGULAR_HOME: sibling }, { cwd: proj }).env.SINGULAR_HOME, sibling, 'a sibling (the e2e layout) is kept');
+    assert.deepEqual(hardenEnv({ SINGULAR_HOME: sibling }, { cwd: proj }).warnings, []);
     // the inside rule still wins its own message
-    assert.match(hardenEnv({ SKILL_SCOUT_HOME: path.join(proj, 'x') }, { cwd: proj }).warnings[0], /inside the project directory/);
+    assert.match(hardenEnv({ SINGULAR_HOME: path.join(proj, 'x') }, { cwd: proj }).warnings[0], /inside the project directory/);
     // without cwd an ancestor cannot be judged: only the absolute rule applies
-    assert.equal(hardenEnv({ SKILL_SCOUT_HOME: parent }).env.SKILL_SCOUT_HOME, parent);
+    assert.equal(hardenEnv({ SINGULAR_HOME: parent }).env.SINGULAR_HOME, parent);
   });
 
   test('replaces a TMPDIR / TMP / TEMP inside cwd (or relative) by the platform default, so a clone or npx work dir can never sit inside the repository; absolute values elsewhere are kept', () => {
@@ -461,22 +461,22 @@ describe('hardenEnv', () => {
     fs.mkdirSync(proj, { recursive: true });
     const base = path.join(ROOT, 'seam-base'); // a sibling of the project (ROOT itself would be an ancestor and is refused)
     const h = hardenEnv({
-      SKILL_SCOUT_REGISTRY_BASE: 'https://skills.sh',
-      SKILL_SCOUT_GIT_BASE: base,
-      SKILL_SCOUT_SKILLS_DIR: 'relative',
-      SKILL_SCOUT_TEST_ALLOW_AUTO: '1',
+      SINGULAR_REGISTRY_BASE: 'https://skills.sh',
+      SINGULAR_GIT_BASE: base,
+      SINGULAR_SKILLS_DIR: 'relative',
+      SINGULAR_TEST_ALLOW_AUTO: '1',
     }, { cwd: proj });
-    assert.equal(h.env.SKILL_SCOUT_REGISTRY_BASE, undefined);
-    assert.equal(h.env.SKILL_SCOUT_GIT_BASE, base);
-    assert.equal(h.env.SKILL_SCOUT_SKILLS_DIR, undefined);
-    assert.equal(h.env.SKILL_SCOUT_TEST_ALLOW_AUTO, '1');
-    assert.deepEqual(h.seams.active, ['SKILL_SCOUT_GIT_BASE', 'SKILL_SCOUT_TEST_ALLOW_AUTO']);
-    assert.deepEqual(h.seams.invalid, ['SKILL_SCOUT_REGISTRY_BASE', 'SKILL_SCOUT_SKILLS_DIR']);
+    assert.equal(h.env.SINGULAR_REGISTRY_BASE, undefined);
+    assert.equal(h.env.SINGULAR_GIT_BASE, base);
+    assert.equal(h.env.SINGULAR_SKILLS_DIR, undefined);
+    assert.equal(h.env.SINGULAR_TEST_ALLOW_AUTO, '1');
+    assert.deepEqual(h.seams.active, ['SINGULAR_GIT_BASE', 'SINGULAR_TEST_ALLOW_AUTO']);
+    assert.deepEqual(h.seams.invalid, ['SINGULAR_REGISTRY_BASE', 'SINGULAR_SKILLS_DIR']);
     assert.equal(h.warnings.length, 4);
-    assert.match(h.warnings[0], /^SKILL_SCOUT_REGISTRY_BASE=https:\/\/skills\.sh ignored \(test seam, see docs\/testing\.md: only http\(s\):\/\/localhost, 127\.0\.0\.1 or \[::1\] is honoured\)$/);
-    assert.match(h.warnings[1], /^SKILL_SCOUT_SKILLS_DIR=relative ignored \(test seam, see docs\/testing\.md: must be an absolute path neither inside nor above the project directory\)$/);
-    assert.equal(h.warnings[2], `TEST SEAM ACTIVE: SKILL_SCOUT_GIT_BASE=${base} (test seam, see docs/testing.md; never set this in a real shell)`);
-    assert.equal(h.warnings[3], 'TEST SEAM ACTIVE: SKILL_SCOUT_TEST_ALLOW_AUTO=1 (test seam, see docs/testing.md; never set this in a real shell)');
+    assert.match(h.warnings[0], /^SINGULAR_REGISTRY_BASE=https:\/\/skills\.sh ignored \(test seam, see docs\/testing\.md: only http\(s\):\/\/localhost, 127\.0\.0\.1 or \[::1\] is honoured\)$/);
+    assert.match(h.warnings[1], /^SINGULAR_SKILLS_DIR=relative ignored \(test seam, see docs\/testing\.md: must be an absolute path neither inside nor above the project directory\)$/);
+    assert.equal(h.warnings[2], `TEST SEAM ACTIVE: SINGULAR_GIT_BASE=${base} (test seam, see docs/testing.md; never set this in a real shell)`);
+    assert.equal(h.warnings[3], 'TEST SEAM ACTIVE: SINGULAR_TEST_ALLOW_AUTO=1 (test seam, see docs/testing.md; never set this in a real shell)');
   });
 });
 
@@ -486,13 +486,13 @@ describe('testSeams (docs/testing.md)', () => {
   test('nothing set -> the inert shape; the accessors return null/false', () => {
     assert.deepEqual(testSeams({}), { registryBase: null, gitBase: null, skillsDir: null, allowAuto: false, active: [], invalid: [], warnings: [] });
     assert.deepEqual(testSeams(undefined), testSeams({}));
-    assert.deepEqual(testSeams({ SKILL_SCOUT_REGISTRY_BASE: '', SKILL_SCOUT_GIT_BASE: '  ', SKILL_SCOUT_SKILLS_DIR: '', SKILL_SCOUT_TEST_ALLOW_AUTO: '' }), testSeams({}), 'blank values are unset');
+    assert.deepEqual(testSeams({ SINGULAR_REGISTRY_BASE: '', SINGULAR_GIT_BASE: '  ', SINGULAR_SKILLS_DIR: '', SINGULAR_TEST_ALLOW_AUTO: '' }), testSeams({}), 'blank values are unset');
     assert.equal(seamRegistryBase({}), null);
     assert.equal(seamGitBase({}), null);
     assert.equal(seamSkillsDir({}), null);
   });
 
-  test('SKILL_SCOUT_REGISTRY_BASE: loopback http(s) with optional port/path, normalized without a trailing slash; everything else refused', () => {
+  test('SINGULAR_REGISTRY_BASE: loopback http(s) with optional port/path, normalized without a trailing slash; everything else refused', () => {
     const ok = {
       'http://127.0.0.1:4567': 'http://127.0.0.1:4567',
       'http://localhost:4567/': 'http://localhost:4567',
@@ -502,95 +502,95 @@ describe('testSeams (docs/testing.md)', () => {
       '  http://127.0.0.1:9  ': 'http://127.0.0.1:9',
     };
     for (const [input, want] of Object.entries(ok)) {
-      const s = testSeams({ SKILL_SCOUT_REGISTRY_BASE: input });
+      const s = testSeams({ SINGULAR_REGISTRY_BASE: input });
       assert.equal(s.registryBase, want, input);
-      assert.deepEqual(s.active, ['SKILL_SCOUT_REGISTRY_BASE']);
+      assert.deepEqual(s.active, ['SINGULAR_REGISTRY_BASE']);
       assert.deepEqual(s.invalid, []);
-      assert.equal(seamRegistryBase({ SKILL_SCOUT_REGISTRY_BASE: input }), want);
+      assert.equal(seamRegistryBase({ SINGULAR_REGISTRY_BASE: input }), want);
     }
     for (const bad of ['https://skills.sh', 'http://evil.example', 'http://127.0.0.1.evil.example', 'http://localhost.evil', 'ftp://localhost', 'file:///tmp', 'localhost:4567', 'http://localhost/?x=1', 'http://localhost/#frag', 'http://user:pw@evil.example', 'nonsense', 'http://10.0.0.1', 'http://0.0.0.0']) {
-      const s = testSeams({ SKILL_SCOUT_REGISTRY_BASE: bad });
+      const s = testSeams({ SINGULAR_REGISTRY_BASE: bad });
       assert.equal(s.registryBase, null, bad);
       assert.deepEqual(s.active, [], bad);
-      assert.deepEqual(s.invalid, ['SKILL_SCOUT_REGISTRY_BASE'], bad);
+      assert.deepEqual(s.invalid, ['SINGULAR_REGISTRY_BASE'], bad);
       assert.equal(s.warnings.length, 1);
-      assert.match(s.warnings[0], /^SKILL_SCOUT_REGISTRY_BASE=.* ignored \(test seam, see docs\/testing\.md: only http\(s\):\/\/localhost, 127\.0\.0\.1 or \[::1\] is honoured\)$/, bad);
+      assert.match(s.warnings[0], /^SINGULAR_REGISTRY_BASE=.* ignored \(test seam, see docs\/testing\.md: only http\(s\):\/\/localhost, 127\.0\.0\.1 or \[::1\] is honoured\)$/, bad);
     }
   });
 
-  test('SKILL_SCOUT_GIT_BASE: absolute local path or file:// URL (localhost host allowed), outside cwd, trailing slashes dropped; http(s) and in-project values refused', () => {
+  test('SINGULAR_GIT_BASE: absolute local path or file:// URL (localhost host allowed), outside cwd, trailing slashes dropped; http(s) and in-project values refused', () => {
     const proj = path.join(ROOT, 'git-proj');
     const base = path.join(ROOT, 'git-base');
     fs.mkdirSync(path.join(proj, 'inner'), { recursive: true });
     fs.mkdirSync(base, { recursive: true });
-    assert.equal(testSeams({ SKILL_SCOUT_GIT_BASE: base }, { cwd: proj }).gitBase, base);
-    assert.equal(testSeams({ SKILL_SCOUT_GIT_BASE: `${base}///` }, { cwd: proj }).gitBase, base);
-    assert.equal(testSeams({ SKILL_SCOUT_GIT_BASE: `file://${base}/` }, { cwd: proj }).gitBase, `file://${base}`);
-    assert.equal(testSeams({ SKILL_SCOUT_GIT_BASE: `FILE://localhost${base}` }, { cwd: proj }).gitBase, `file://${base}`);
-    assert.equal(testSeams({ SKILL_SCOUT_GIT_BASE: `file://${encodeURI(path.join(ROOT, 'with space'))}` }, { cwd: proj }).gitBase, `file://${path.join(ROOT, 'with space')}`, 'percent-decoded');
-    assert.equal(testSeams({ SKILL_SCOUT_GIT_BASE: base }).gitBase, base, 'no cwd: only the absolute rule');
-    assert.equal(seamGitBase({ SKILL_SCOUT_GIT_BASE: base }), base);
-    const active = testSeams({ SKILL_SCOUT_GIT_BASE: base }, { cwd: proj });
-    assert.deepEqual(active.active, ['SKILL_SCOUT_GIT_BASE']);
-    assert.deepEqual(active.warnings, [`TEST SEAM ACTIVE: SKILL_SCOUT_GIT_BASE=${base} (test seam, see docs/testing.md; never set this in a real shell)`]);
+    assert.equal(testSeams({ SINGULAR_GIT_BASE: base }, { cwd: proj }).gitBase, base);
+    assert.equal(testSeams({ SINGULAR_GIT_BASE: `${base}///` }, { cwd: proj }).gitBase, base);
+    assert.equal(testSeams({ SINGULAR_GIT_BASE: `file://${base}/` }, { cwd: proj }).gitBase, `file://${base}`);
+    assert.equal(testSeams({ SINGULAR_GIT_BASE: `FILE://localhost${base}` }, { cwd: proj }).gitBase, `file://${base}`);
+    assert.equal(testSeams({ SINGULAR_GIT_BASE: `file://${encodeURI(path.join(ROOT, 'with space'))}` }, { cwd: proj }).gitBase, `file://${path.join(ROOT, 'with space')}`, 'percent-decoded');
+    assert.equal(testSeams({ SINGULAR_GIT_BASE: base }).gitBase, base, 'no cwd: only the absolute rule');
+    assert.equal(seamGitBase({ SINGULAR_GIT_BASE: base }), base);
+    const active = testSeams({ SINGULAR_GIT_BASE: base }, { cwd: proj });
+    assert.deepEqual(active.active, ['SINGULAR_GIT_BASE']);
+    assert.deepEqual(active.warnings, [`TEST SEAM ACTIVE: SINGULAR_GIT_BASE=${base} (test seam, see docs/testing.md; never set this in a real shell)`]);
     // Observation (not asserted): a bare "file://" normalizes to the filesystem root "/" and is accepted as a local base.
     // an ANCESTOR of the project is refused too (security review 2026-10-08): <base>/<owner>/<repo> could then be a sibling checkout
     // named after an allowlisted owner, or the project itself, and be served as that owner's repository
     for (const bad of ['https://github.com', 'http://localhost/git', 'https://evil.example/x', 'relative/dir', './here', 'file://evil.example/x', path.join(proj, 'inner'), proj, `file://${path.join(proj, 'inner')}`, 'git@github.com:a/b.git', path.dirname(proj), `file://${path.dirname(proj)}`, path.dirname(path.dirname(proj)), '/', 'file:///']) {
-      const s = testSeams({ SKILL_SCOUT_GIT_BASE: bad }, { cwd: proj });
+      const s = testSeams({ SINGULAR_GIT_BASE: bad }, { cwd: proj });
       assert.equal(s.gitBase, null, bad);
-      assert.deepEqual(s.invalid, ['SKILL_SCOUT_GIT_BASE'], bad);
-      assert.match(s.warnings[0], /^SKILL_SCOUT_GIT_BASE=.* ignored \(test seam, see docs\/testing\.md: must be an absolute local path or file:\/\/ URL neither inside nor above the project directory; remote hosts are never honoured\)$/, bad);
+      assert.deepEqual(s.invalid, ['SINGULAR_GIT_BASE'], bad);
+      assert.match(s.warnings[0], /^SINGULAR_GIT_BASE=.* ignored \(test seam, see docs\/testing\.md: must be an absolute local path or file:\/\/ URL neither inside nor above the project directory; remote hosts are never honoured\)$/, bad);
     }
     // the worked attack: base = the parent of the cwd, project checked out as <parent>/anthropics with skills/ inside
     const parent = path.join(ROOT, 'anc-workspaces');
     const checkout = path.join(parent, 'anthropics');
     fs.mkdirSync(path.join(checkout, 'skills'), { recursive: true });
-    const anc = testSeams({ SKILL_SCOUT_GIT_BASE: parent }, { cwd: checkout });
+    const anc = testSeams({ SINGULAR_GIT_BASE: parent }, { cwd: checkout });
     assert.equal(anc.gitBase, null, 'an ancestor base is refused');
     assert.deepEqual(anc.active, []);
-    assert.equal(hardenEnv({ SKILL_SCOUT_GIT_BASE: parent }, { cwd: checkout }).env.SKILL_SCOUT_GIT_BASE, undefined, 'hardenEnv drops it');
-    assert.equal(testSeams({ SKILL_SCOUT_GIT_BASE: path.join(parent, '..', 'sibling-base') }, { cwd: checkout }).gitBase, path.join(ROOT, 'sibling-base'), 'a sibling of the parent is still fine (where the e2e git base lives)');
+    assert.equal(hardenEnv({ SINGULAR_GIT_BASE: parent }, { cwd: checkout }).env.SINGULAR_GIT_BASE, undefined, 'hardenEnv drops it');
+    assert.equal(testSeams({ SINGULAR_GIT_BASE: path.join(parent, '..', 'sibling-base') }, { cwd: checkout }).gitBase, path.join(ROOT, 'sibling-base'), 'a sibling of the parent is still fine (where the e2e git base lives)');
   });
 
-  test('SKILL_SCOUT_SKILLS_DIR: absolute and outside cwd (resolved); relative or in-project refused', () => {
+  test('SINGULAR_SKILLS_DIR: absolute and outside cwd (resolved); relative or in-project refused', () => {
     const proj = path.join(ROOT, 'skills-proj');
     fs.mkdirSync(proj, { recursive: true });
     const dir = path.join(ROOT, 'alt-skills');
-    assert.equal(testSeams({ SKILL_SCOUT_SKILLS_DIR: `${dir}/` }, { cwd: proj }).skillsDir, dir);
-    assert.equal(testSeams({ SKILL_SCOUT_SKILLS_DIR: path.join(dir, '..', 'alt-skills') }, { cwd: proj }).skillsDir, dir);
-    assert.equal(seamSkillsDir({ SKILL_SCOUT_SKILLS_DIR: dir }), dir);
+    assert.equal(testSeams({ SINGULAR_SKILLS_DIR: `${dir}/` }, { cwd: proj }).skillsDir, dir);
+    assert.equal(testSeams({ SINGULAR_SKILLS_DIR: path.join(dir, '..', 'alt-skills') }, { cwd: proj }).skillsDir, dir);
+    assert.equal(seamSkillsDir({ SINGULAR_SKILLS_DIR: dir }), dir);
     for (const bad of ['skills', '../x', path.join(proj, 'skills'), proj, path.dirname(proj), '/']) {
-      const s = testSeams({ SKILL_SCOUT_SKILLS_DIR: bad }, { cwd: proj });
+      const s = testSeams({ SINGULAR_SKILLS_DIR: bad }, { cwd: proj });
       assert.equal(s.skillsDir, null, bad);
-      assert.deepEqual(s.invalid, ['SKILL_SCOUT_SKILLS_DIR']);
-      assert.match(s.warnings[0], /^SKILL_SCOUT_SKILLS_DIR=.* ignored \(test seam, see docs\/testing\.md: must be an absolute path neither inside nor above the project directory\)$/);
+      assert.deepEqual(s.invalid, ['SINGULAR_SKILLS_DIR']);
+      assert.match(s.warnings[0], /^SINGULAR_SKILLS_DIR=.* ignored \(test seam, see docs\/testing\.md: must be an absolute path neither inside nor above the project directory\)$/);
     }
   });
 
-  test('SKILL_SCOUT_TEST_ALLOW_AUTO: only the literal "1"', () => {
-    const on = testSeams({ SKILL_SCOUT_TEST_ALLOW_AUTO: '1' });
+  test('SINGULAR_TEST_ALLOW_AUTO: only the literal "1"', () => {
+    const on = testSeams({ SINGULAR_TEST_ALLOW_AUTO: '1' });
     assert.equal(on.allowAuto, true);
-    assert.deepEqual(on.active, ['SKILL_SCOUT_TEST_ALLOW_AUTO']);
-    assert.deepEqual(on.warnings, ['TEST SEAM ACTIVE: SKILL_SCOUT_TEST_ALLOW_AUTO=1 (test seam, see docs/testing.md; never set this in a real shell)']);
-    assert.equal(testSeams({ SKILL_SCOUT_TEST_ALLOW_AUTO: ' 1 ' }).allowAuto, true, 'trimmed');
+    assert.deepEqual(on.active, ['SINGULAR_TEST_ALLOW_AUTO']);
+    assert.deepEqual(on.warnings, ['TEST SEAM ACTIVE: SINGULAR_TEST_ALLOW_AUTO=1 (test seam, see docs/testing.md; never set this in a real shell)']);
+    assert.equal(testSeams({ SINGULAR_TEST_ALLOW_AUTO: ' 1 ' }).allowAuto, true, 'trimmed');
     for (const bad of ['true', 'yes', '0', '11', 'on']) {
-      const s = testSeams({ SKILL_SCOUT_TEST_ALLOW_AUTO: bad });
+      const s = testSeams({ SINGULAR_TEST_ALLOW_AUTO: bad });
       assert.equal(s.allowAuto, false, bad);
-      assert.deepEqual(s.invalid, ['SKILL_SCOUT_TEST_ALLOW_AUTO']);
-      assert.deepEqual(s.warnings, [`SKILL_SCOUT_TEST_ALLOW_AUTO=${bad} ignored (test seam, see docs/testing.md: only "1" is honoured)`]);
+      assert.deepEqual(s.invalid, ['SINGULAR_TEST_ALLOW_AUTO']);
+      assert.deepEqual(s.warnings, [`SINGULAR_TEST_ALLOW_AUTO=${bad} ignored (test seam, see docs/testing.md: only "1" is honoured)`]);
     }
   });
 
   test('all four at once: active list keeps variable order, one announcement per active seam, drops explained first', () => {
     const base = path.join(ROOT, 'all-base');
     fs.mkdirSync(base, { recursive: true });
-    const s = testSeams({ SKILL_SCOUT_REGISTRY_BASE: 'http://localhost:1', SKILL_SCOUT_GIT_BASE: base, SKILL_SCOUT_SKILLS_DIR: 'bad', SKILL_SCOUT_TEST_ALLOW_AUTO: '1' });
-    assert.deepEqual(s.active, ['SKILL_SCOUT_REGISTRY_BASE', 'SKILL_SCOUT_GIT_BASE', 'SKILL_SCOUT_TEST_ALLOW_AUTO']);
-    assert.deepEqual(s.invalid, ['SKILL_SCOUT_SKILLS_DIR']);
+    const s = testSeams({ SINGULAR_REGISTRY_BASE: 'http://localhost:1', SINGULAR_GIT_BASE: base, SINGULAR_SKILLS_DIR: 'bad', SINGULAR_TEST_ALLOW_AUTO: '1' });
+    assert.deepEqual(s.active, ['SINGULAR_REGISTRY_BASE', 'SINGULAR_GIT_BASE', 'SINGULAR_TEST_ALLOW_AUTO']);
+    assert.deepEqual(s.invalid, ['SINGULAR_SKILLS_DIR']);
     assert.equal(s.warnings.length, 4);
-    assert.match(s.warnings[0], /^SKILL_SCOUT_SKILLS_DIR=bad ignored/);
-    assert.deepEqual(s.warnings.slice(1).map((w) => w.split('=')[0]), ['TEST SEAM ACTIVE: SKILL_SCOUT_REGISTRY_BASE', 'TEST SEAM ACTIVE: SKILL_SCOUT_GIT_BASE', 'TEST SEAM ACTIVE: SKILL_SCOUT_TEST_ALLOW_AUTO']);
+    assert.match(s.warnings[0], /^SINGULAR_SKILLS_DIR=bad ignored/);
+    assert.deepEqual(s.warnings.slice(1).map((w) => w.split('=')[0]), ['TEST SEAM ACTIVE: SINGULAR_REGISTRY_BASE', 'TEST SEAM ACTIVE: SINGULAR_GIT_BASE', 'TEST SEAM ACTIVE: SINGULAR_TEST_ALLOW_AUTO']);
   });
 });
 

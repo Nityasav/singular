@@ -1,14 +1,14 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "skill-scout-local",
-  "description": "Local marketplace for the skill-scout plugin (loads in place from this checkout).",
+  "name": "singular",
+  "description": "Marketplace for the Singular plugin (registered from this directory; plugin id singular@singular).",
   "owner": { "name": "Nitya Sav" },
   "plugins": [
     {
-      "name": "skill-scout",
+      "name": "singular",
       "source": "./",
       "description": "Per-prompt skill routing, stack detection, and gated ephemeral discovery of third-party skills.",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "category": "productivity"
     }
   ]

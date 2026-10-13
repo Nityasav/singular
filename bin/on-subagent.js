@@ -1,15 +1,15 @@
 #!/usr/bin/env node
-// bin/on-subagent.js — SubagentStart hook entrypoint for skill-scout.
+// bin/on-subagent.js — SubagentStart hook entrypoint for singular.
 //
 // A subagent's prompt never passes through UserPromptSubmit and the parent's additionalContext is not
-// inherited (verified on Claude Code 2.1.293: a subagent reported no [skill-scout] line at all), but a
+// inherited (verified on Claude Code 2.1.293: a subagent reported no [singular] line at all), but a
 // SubagentStart hook may return hookSpecificOutput.additionalContext ("Context only" in the hooks docs;
 // exit 2 does not block). This entrypoint injects ONLY the one-line project stack: no index scoring,
-// no network, no prefetch, no third-party text (ephemeral /scout-load text is never forwarded to
+// no network, no prefetch, no third-party text (ephemeral /singular load text is never forwarded to
 // subagents), so it finishes in well under 100 ms.
 //
 // stdin JSON (2.1.293): {session_id, transcript_path, cwd, prompt_id, agent_id, agent_type, hook_event_name: "SubagentStart"}
-// stdout: {"hookSpecificOutput":{"hookEventName":"SubagentStart","additionalContext":"[skill-scout] Stack: ..."}} or nothing
+// stdout: {"hookSpecificOutput":{"hookEventName":"SubagentStart","additionalContext":"[singular] Stack: ..."}} or nothing
 // Exit 0 always. Nothing when mode is off, stackDetection is false, or the cwd has no detectable stack.
 //
 // Dry-run: node bin/on-subagent.js --dry-run [--cwd <dir>]

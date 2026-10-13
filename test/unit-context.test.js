@@ -10,7 +10,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-const SCRATCH_ROOT = process.env.SKILL_SCOUT_TEST_TMP
+const SCRATCH_ROOT = process.env.SINGULAR_TEST_TMP
   || '/private/tmp/claude-501/-Users-nitya--superset-projects-claude-skills/cfa575e5-ae3c-4522-b59f-cd3623c88bf0/scratchpad';
 
 function mkTmp(label) {
@@ -20,7 +20,7 @@ function mkTmp(label) {
 }
 
 const ROOT = mkTmp('state');
-process.env.SKILL_SCOUT_HOME = path.join(ROOT, 'scout-home');
+process.env.SINGULAR_HOME = path.join(ROOT, 'singular-home');
 process.env.HOME = path.join(ROOT, 'home');
 
 const ctx = await import('../lib/context.js');
@@ -35,11 +35,11 @@ const stack = { summary: 'Next.js 16, Tailwind 4; branch main', tags: ['next', '
 
 describe('constants', () => {
   test('TAG, thresholds, marker and the relay line are exactly what the docs promise', () => {
-    assert.equal(TAG, '[skill-scout]');
+    assert.equal(TAG, '[singular]');
     assert.equal(SPILL_THRESHOLD, 9500);
     assert.equal(HOOK_HARD_CAP, 10000);
-    assert.equal(TRUNCATION_MARKER, '\n[skill-scout: truncated]');
-    assert.equal(RELAY_LINE, 'If one of the third-party candidates below fits the request, end your reply with exactly one line `Load with /scout-load <ref>` naming the single best fit; omit that line if none fits.');
+    assert.equal(TRUNCATION_MARKER, '\n[singular: truncated]');
+    assert.equal(RELAY_LINE, 'If one of the third-party candidates below fits the request, end your reply with exactly one line `Load with /singular load <ref>` naming the single best fit; omit that line if none fits.');
     assert.ok(SPILL_THRESHOLD < HOOK_HARD_CAP);
   });
 });
@@ -98,13 +98,13 @@ describe('composeContext: sections and label forms', () => {
     const lines = out.split('\n');
     assert.equal(lines[0], `${TAG} ${RELAY_LINE}`);
     assert.equal(lines[1], [
-      'Third-party candidates (not loaded): a/b@c (0 installs) — load with /scout-load a/b@c',
-      'o/r@s (999 installs, audit warn) — load with /scout-load o/r@s',
-      `d/e#${SHA.slice(0, 7)}@f (1.0K installs, audit pass) — load with /scout-load d/e@f`,
-      'g/h@i (123K installs) — load with /scout-load g/h@i',
-      'j/k@l (1.5M installs) — load with /scout-load j/k@l',
-      'm/n@o (12M installs) — load with /scout-load m/n@o',
-      'p/q@r (0 installs) — load with /scout-load p/q@r',
+      'Third-party candidates (not loaded): a/b@c (0 installs) — load with /singular load a/b@c',
+      'o/r@s (999 installs, audit warn) — load with /singular load o/r@s',
+      `d/e#${SHA.slice(0, 7)}@f (1.0K installs, audit pass) — load with /singular load d/e@f`,
+      'g/h@i (123K installs) — load with /singular load g/h@i',
+      'j/k@l (1.5M installs) — load with /singular load j/k@l',
+      'm/n@o (12M installs) — load with /singular load m/n@o',
+      'p/q@r (0 installs) — load with /singular load p/q@r',
     ].join('; '));
     assert.equal(lines.length, 2);
     assert.doesNotMatch(out, /no-source|only-owner|string|deadbeef/);
@@ -130,7 +130,7 @@ describe('composeContext: sections and label forms', () => {
     for (const mode of ['suggest', 'auto', undefined, 'weird']) {
       const out = composeContext({ candidates: cands, mode });
       assert.match(out, /Third-party candidates \(not loaded\): a\/b@c/, String(mode));
-      assert.match(out, /^\[skill-scout\] If one of the third-party candidates/);
+      assert.match(out, /^\[singular\] If one of the third-party candidates/);
     }
   });
 
@@ -147,11 +147,11 @@ describe('composeContext: sections and label forms', () => {
       'Pinned installed skills (user-configured, consider invoking): ns:pin-a, pin-b',
       'Installed skills likely relevant: loc (matches x)',
       RELAY_LINE,
-      'Third-party candidates (not loaded): a/b@c (5 installs) — load with /scout-load a/b@c',
+      'Third-party candidates (not loaded): a/b@c (5 installs) — load with /singular load a/b@c',
       'note one',
       'note two',
     ]);
-    assert.equal((out.match(/\[skill-scout\]/g) || []).length, 1);
+    assert.equal((out.match(/\[singular\]/g) || []).length, 1);
     assert.equal(composeContext({ pinned: ['only'] }), `${TAG} Pinned installed skills (user-configured, consider invoking): only`);
     assert.equal(composeContext({ notes: ['only a note'] }), `${TAG} only a note`);
   });
@@ -196,7 +196,7 @@ describe('composeContext: budget', () => {
     }
     const tiny = composeContext({ stack, localMatches: local, candidates: cands, budgetChars: 200 });
     assert.ok(tiny.length <= 200);
-    assert.match(tiny, /^\[skill-scout\] Stack: /);
+    assert.match(tiny, /^\[singular\] Stack: /);
     assert.ok(steps.some(([, c]) => c === 0), 'some budget drops every candidate');
     assert.ok(steps.some(([, c, l]) => c === 0 && l < local.length), 'once no candidate is left, local matches start to go');
     assert.equal(steps[steps.length - 1][1], 0, 'at the 200 floor no candidate survives');
@@ -222,7 +222,7 @@ describe('composeContext: budget', () => {
     assert.ok(out.endsWith('\nthe note survives'));
     assert.doesNotMatch(out, /Third-party/);
     assert.ok((out.match(/local-skill-\d+ \(/g) || []).length < local.length, 'local matches were cut to make room, the note was not');
-    assert.match(out, /^\[skill-scout\] Stack: /);
+    assert.match(out, /^\[singular\] Stack: /);
   });
 });
 
@@ -235,15 +235,15 @@ describe('composeContext: loaded block', () => {
       `${TAG} Stack: ${stack.summary}`,
       'Installed skills likely relevant: loc (matches x)',
       `Loaded third-party skill a/b#${SHA}@c (auto mode, user-configured; text only, nothing installed). Stripped: frontmatter: hooks; inline shell x1.`,
-      `<skill-scout-loaded ref="a/b#${SHA}@c">`,
+      `<singular-loaded ref="a/b#${SHA}@c">`,
       '---', 'name: c', '---', 'Body',
-      '</skill-scout-loaded>',
+      '</singular-loaded>',
     ]);
   });
 
   test('alone it carries the tag; custom reason; empty stripped list -> no "Stripped:" clause; blank or non-string text -> no block', () => {
     const alone = composeContext({ loaded: { ref: 'a/b@c', text: 'x' } });
-    assert.equal(alone, `${TAG} Loaded third-party skill a/b@c (auto mode, user-configured; text only, nothing installed).\n<skill-scout-loaded ref="a/b@c">\nx\n</skill-scout-loaded>`);
+    assert.equal(alone, `${TAG} Loaded third-party skill a/b@c (auto mode, user-configured; text only, nothing installed).\n<singular-loaded ref="a/b@c">\nx\n</singular-loaded>`);
     const reason = composeContext({ loaded: { ref: 'a/b@c', text: 'x', reason: '  pinned in config.pinnedSkills ' } });
     assert.match(reason, /\(pinned in config\.pinnedSkills; text only, nothing installed\)\./);
     const blankReason = composeContext({ loaded: { ref: 'a/b@c', text: 'x', reason: '   ' } });
@@ -261,13 +261,13 @@ describe('composeContext: loaded block', () => {
       const text = 'z'.repeat(len);
       const out = composeContext({ ...routing, mode: 'auto', loaded: { ref: `o/r#${SHA}@s`, text, stripped: ['frontmatter: hooks'] } });
       assert.ok(out.length <= SPILL_THRESHOLD, `len ${len}: ${out.length} <= ${SPILL_THRESHOLD}`);
-      assert.match(out, /^\[skill-scout\] Stack: S{150}\nInstalled skills likely relevant: skill-0/);
-      assert.ok(out.endsWith('\n</skill-scout-loaded>'));
+      assert.match(out, /^\[singular\] Stack: S{150}\nInstalled skills likely relevant: skill-0/);
+      assert.ok(out.endsWith('\n</singular-loaded>'));
       const truncated = /truncated (\d+) chars to fit the 9,500-char hook budget/.exec(out);
       if (truncated) {
         assert.ok(out.includes(TRUNCATION_MARKER), 'marker present when truncated');
         assert.match(out, /Stripped: frontmatter: hooks; truncated \d+ chars to fit the 9,500-char hook budget\./, 'original stripped entries kept, note appended');
-        const body = out.split('\n<skill-scout-loaded')[1].split('>\n')[1].split('\n</skill-scout-loaded>')[0];
+        const body = out.split('\n<singular-loaded')[1].split('>\n')[1].split('\n</singular-loaded>')[0];
         const kept = body.replace(TRUNCATION_MARKER, '').length;
         assert.equal(kept + Number(truncated[1]), len, 'kept + truncated = original length');
       } else {
@@ -334,7 +334,7 @@ describe('spillIfNeeded', () => {
     const big = `${'y'.repeat(9600)}\nlast line`;
     const before = Date.now();
     const note = spillIfNeeded(big, home);
-    assert.match(note, new RegExp(`^\\[skill-scout\\] Context was ${big.length} chars \\(over skill-scout's 9500-char threshold; Claude Code previews only 2 KB past 10000\\) and was written to (.+/spill-\\d+\\.md)\\. Read that file if the loaded skill text is needed\\.$`));
+    assert.match(note, new RegExp(`^\\[singular\\] Context was ${big.length} chars \\(over singular's 9500-char threshold; Claude Code previews only 2 KB past 10000\\) and was written to (.+/spill-\\d+\\.md)\\. Read that file if the loaded skill text is needed\\.$`));
     const file = /written to (\S+)\./.exec(note)[1];
     assert.equal(path.dirname(file), home);
     const ts = Number(/spill-(\d+)\.md$/.exec(file)[1]);
@@ -356,7 +356,7 @@ describe('spillIfNeeded', () => {
     assert.ok(out.length < big.length);
     assert.ok(out.startsWith('w'.repeat(SPILL_THRESHOLD - 120)));
     assert.equal(out.indexOf('\n'), SPILL_THRESHOLD - 120, 'the body is cut at threshold - 120');
-    assert.match(out, /\n\[skill-scout\] \[truncated: 12000 chars; spill to .*spill-\d+\.md failed: .{1,60}\]$/);
+    assert.match(out, /\n\[singular\] \[truncated: 12000 chars; spill to .*spill-\d+\.md failed: .{1,60}\]$/);
     assert.equal(fs.readFileSync(file, 'utf8'), 'not a directory', 'the blocker file is untouched');
   });
 });
@@ -376,7 +376,7 @@ describe('hookOutput: exact JSON on stdout', () => {
   });
 
   test('systemMessage is added at the top level only when it is a non-blank string', () => {
-    assert.equal(hookOutput('UserPromptSubmit', 'ctx', { systemMessage: '[skill-scout] WARNING' }), '{"hookSpecificOutput":{"hookEventName":"UserPromptSubmit","additionalContext":"ctx"},"systemMessage":"[skill-scout] WARNING"}');
+    assert.equal(hookOutput('UserPromptSubmit', 'ctx', { systemMessage: '[singular] WARNING' }), '{"hookSpecificOutput":{"hookEventName":"UserPromptSubmit","additionalContext":"ctx"},"systemMessage":"[singular] WARNING"}');
     assert.equal(hookOutput('UserPromptSubmit', '', { systemMessage: 'note' }), '{"hookSpecificOutput":{"hookEventName":"UserPromptSubmit","additionalContext":""},"systemMessage":"note"}', 'a message without context is still carried');
     for (const extra of [{ systemMessage: '' }, { systemMessage: '   ' }, { systemMessage: null }, { systemMessage: 5 }, { other: 'x' }, null, undefined, 'str']) {
       assert.equal(hookOutput('UserPromptSubmit', 'ctx', extra), '{"hookSpecificOutput":{"hookEventName":"UserPromptSubmit","additionalContext":"ctx"}}', JSON.stringify(extra));
@@ -387,7 +387,7 @@ describe('hookOutput: exact JSON on stdout', () => {
   });
 
   test('round-trips arbitrary context (unicode, control chars, 9,500-char bodies) through JSON.parse', () => {
-    const ctxText = `[skill-scout] Stack: Next.js 16 — ü 🚀 \u0000 \t ${'x'.repeat(9400)}`;
+    const ctxText = `[singular] Stack: Next.js 16 — ü 🚀 \u0000 \t ${'x'.repeat(9400)}`;
     const back = JSON.parse(hookOutput('UserPromptSubmit', ctxText));
     assert.equal(back.hookSpecificOutput.additionalContext, ctxText);
   });

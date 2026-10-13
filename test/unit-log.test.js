@@ -1,6 +1,6 @@
 // test/unit-log.test.js — node --test test/unit-log.test.js
 // Exhaustive unit tests for lib/log.js: path resolution, JSON-lines shape, extra sanitising, rotation at
-// 2 MiB, swallowed failures, stdout/stderr silence, timer(). No network. HOME and SKILL_SCOUT_HOME point at
+// 2 MiB, swallowed failures, stdout/stderr silence, timer(). No network. HOME and SINGULAR_HOME point at
 // throwaway directories so the real ~/.claude is never touched.
 
 import { test, describe, after, beforeEach, afterEach } from 'node:test';
@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-const SCRATCH_ROOT = process.env.SKILL_SCOUT_TEST_TMP
+const SCRATCH_ROOT = process.env.SINGULAR_TEST_TMP
   || '/private/tmp/claude-501/-Users-nitya--superset-projects-claude-skills/cfa575e5-ae3c-4522-b59f-cd3623c88bf0/scratchpad';
 
 function mkTmp(label) {
@@ -20,9 +20,9 @@ function mkTmp(label) {
 
 const ROOT = mkTmp('state');
 const FAKE_HOME = path.join(ROOT, 'fakehome');
-const SCOUT_HOME = path.join(ROOT, 'scout-home');
+const STATE_HOME = path.join(ROOT, 'singular-home');
 fs.mkdirSync(FAKE_HOME, { recursive: true });
-process.env.SKILL_SCOUT_HOME = SCOUT_HOME;
+process.env.SINGULAR_HOME = STATE_HOME;
 process.env.HOME = FAKE_HOME;
 
 const { log, timer, logPath, LOG_FILE } = await import('../lib/log.js');
@@ -53,30 +53,30 @@ afterEach(() => {
 // ---------------------------------------------------------------------------
 
 describe('logPath', () => {
-  test('LOG_FILE is scout.log; an absolute SKILL_SCOUT_HOME is honoured verbatim (resolved)', () => {
-    assert.equal(LOG_FILE, 'scout.log');
-    assert.equal(logPath({ SKILL_SCOUT_HOME: '/abs/dir' }), path.join('/abs/dir', 'scout.log'));
-    assert.equal(logPath({ SKILL_SCOUT_HOME: '/abs/dir/../other/' }), path.join('/abs/other', 'scout.log'), 'path.resolve normalises');
-    assert.equal(logPath({ SKILL_SCOUT_HOME: '  /abs/trimmed  ' }), path.join('/abs/trimmed', 'scout.log'), 'surrounding whitespace trimmed');
+  test('LOG_FILE is singular.log; an absolute SINGULAR_HOME is honoured verbatim (resolved)', () => {
+    assert.equal(LOG_FILE, 'singular.log');
+    assert.equal(logPath({ SINGULAR_HOME: '/abs/dir' }), path.join('/abs/dir', 'singular.log'));
+    assert.equal(logPath({ SINGULAR_HOME: '/abs/dir/../other/' }), path.join('/abs/other', 'singular.log'), 'path.resolve normalises');
+    assert.equal(logPath({ SINGULAR_HOME: '  /abs/trimmed  ' }), path.join('/abs/trimmed', 'singular.log'), 'surrounding whitespace trimmed');
   });
 
-  test('a relative, blank or missing SKILL_SCOUT_HOME falls back to $HOME/.claude/skill-scout/scout.log', () => {
-    const fallback = path.join(FAKE_HOME, '.claude', 'skill-scout', 'scout.log');
-    assert.equal(logPath({ SKILL_SCOUT_HOME: 'relative/dir', HOME: FAKE_HOME }), fallback);
-    assert.equal(logPath({ SKILL_SCOUT_HOME: './x', HOME: FAKE_HOME }), fallback);
-    assert.equal(logPath({ SKILL_SCOUT_HOME: '   ', HOME: FAKE_HOME }), fallback);
-    assert.equal(logPath({ SKILL_SCOUT_HOME: '', HOME: FAKE_HOME }), fallback);
+  test('a relative, blank or missing SINGULAR_HOME falls back to $HOME/.claude/singular/singular.log', () => {
+    const fallback = path.join(FAKE_HOME, '.claude', 'singular', 'singular.log');
+    assert.equal(logPath({ SINGULAR_HOME: 'relative/dir', HOME: FAKE_HOME }), fallback);
+    assert.equal(logPath({ SINGULAR_HOME: './x', HOME: FAKE_HOME }), fallback);
+    assert.equal(logPath({ SINGULAR_HOME: '   ', HOME: FAKE_HOME }), fallback);
+    assert.equal(logPath({ SINGULAR_HOME: '', HOME: FAKE_HOME }), fallback);
     assert.equal(logPath({ HOME: FAKE_HOME }), fallback);
-    assert.equal(logPath({}), path.join(os.homedir(), '.claude', 'skill-scout', 'scout.log'), 'no HOME -> os.homedir()');
+    assert.equal(logPath({}), path.join(os.homedir(), '.claude', 'singular', 'singular.log'), 'no HOME -> os.homedir()');
   });
 
   test('logPath is pure: it never creates the directory; default argument is process.env', () => {
-    const env = { SKILL_SCOUT_HOME: path.join(ROOT, 'never-created') };
+    const env = { SINGULAR_HOME: path.join(ROOT, 'never-created') };
     logPath(env);
-    assert.ok(!fs.existsSync(env.SKILL_SCOUT_HOME));
-    assert.equal(logPath(), path.join(SCOUT_HOME, 'scout.log'));
-    process.env.SKILL_SCOUT_HOME = path.join(ROOT, 'other-home');
-    assert.equal(logPath(), path.join(ROOT, 'other-home', 'scout.log'), 'reads process.env at call time');
+    assert.ok(!fs.existsSync(env.SINGULAR_HOME));
+    assert.equal(logPath(), path.join(STATE_HOME, 'singular.log'));
+    process.env.SINGULAR_HOME = path.join(ROOT, 'other-home');
+    assert.equal(logPath(), path.join(ROOT, 'other-home', 'singular.log'), 'reads process.env at call time');
   });
 });
 
@@ -85,11 +85,11 @@ describe('logPath', () => {
 describe('log()', () => {
   test('creates the directory, appends one JSON object per call with ts/pid/level/msg, returns undefined', () => {
     const home = path.join(ROOT, 'log-basic');
-    process.env.SKILL_SCOUT_HOME = home;
+    process.env.SINGULAR_HOME = home;
     assert.ok(!fs.existsSync(home));
     assert.equal(log('info', 'hello', { a: 1 }), undefined);
     log('warn', 'second');
-    const lines = readLines(path.join(home, 'scout.log'));
+    const lines = readLines(path.join(home, 'singular.log'));
     assert.equal(lines.length, 2);
     const first = JSON.parse(lines[0]);
     assert.deepEqual(Object.keys(first), ['ts', 'pid', 'level', 'msg', 'a'], 'fixed key order: ts, pid, level, msg, then extras');
@@ -102,19 +102,19 @@ describe('log()', () => {
     assert.deepEqual(Object.keys(second), ['ts', 'pid', 'level', 'msg']);
     assert.equal(second.level, 'warn');
     assert.equal(second.msg, 'second');
-    assert.ok(fs.readFileSync(path.join(home, 'scout.log'), 'utf8').endsWith('\n'), 'every line is newline-terminated');
+    assert.ok(fs.readFileSync(path.join(home, 'singular.log'), 'utf8').endsWith('\n'), 'every line is newline-terminated');
   });
 
   test('level and msg are coerced to strings; missing level is "info", missing msg is ""', () => {
     const home = path.join(ROOT, 'log-coerce');
-    process.env.SKILL_SCOUT_HOME = home;
+    process.env.SINGULAR_HOME = home;
     log();
     log(undefined, undefined);
     log(null, null);
     log(5, 42);
     log('debug', { toString: () => 'obj' });
     log('error', ['a', 'b']);
-    const rows = readLines(path.join(home, 'scout.log')).map((l) => JSON.parse(l));
+    const rows = readLines(path.join(home, 'singular.log')).map((l) => JSON.parse(l));
     assert.deepEqual(rows.map((r) => [r.level, r.msg]), [
       ['info', ''],
       ['info', ''],
@@ -127,7 +127,7 @@ describe('log()', () => {
 
   test('extra: non-objects are ignored; reserved keys ts/level/msg are dropped; Errors become {message, name}; nested data is kept', () => {
     const home = path.join(ROOT, 'log-extra');
-    process.env.SKILL_SCOUT_HOME = home;
+    process.env.SINGULAR_HOME = home;
     log('info', 'str-extra', 'just a string');
     log('info', 'num-extra', 42);
     log('info', 'null-extra', null);
@@ -138,7 +138,7 @@ describe('log()', () => {
     err.code = 'E_SECRET';
     err.stack = 'secret stack';
     log('error', 'errors', { err, nested: { inner: new TypeError('t') }, list: [1, { a: 2 }], undef: undefined, fn: () => 1, date: new Date(0) });
-    const rows = Object.fromEntries(readLines(path.join(home, 'scout.log')).map((l) => JSON.parse(l)).map((r) => [r.msg, r]));
+    const rows = Object.fromEntries(readLines(path.join(home, 'singular.log')).map((l) => JSON.parse(l)).map((r) => [r.msg, r]));
     assert.deepEqual(Object.keys(rows['str-extra']), ['ts', 'pid', 'level', 'msg']);
     assert.deepEqual(Object.keys(rows['num-extra']), ['ts', 'pid', 'level', 'msg']);
     assert.deepEqual(Object.keys(rows['null-extra']), ['ts', 'pid', 'level', 'msg']);
@@ -157,57 +157,57 @@ describe('log()', () => {
 
   test('failures are swallowed: cyclic extra, BigInt extra, unwritable directory, home path that is a file', () => {
     const home = path.join(ROOT, 'log-fail');
-    process.env.SKILL_SCOUT_HOME = home;
+    process.env.SINGULAR_HOME = home;
     const cyc = {}; cyc.self = cyc;
     assert.doesNotThrow(() => log('info', 'cyclic', cyc));
     assert.doesNotThrow(() => log('info', 'bigint', { n: 1n }));
     assert.doesNotThrow(() => log('info', 'fine'));
-    const rows = readLines(path.join(home, 'scout.log')).map((l) => JSON.parse(l).msg);
+    const rows = readLines(path.join(home, 'singular.log')).map((l) => JSON.parse(l).msg);
     assert.deepEqual(rows, ['fine'], 'the unserialisable calls wrote nothing');
 
     const fileHome = path.join(ROOT, 'log-file-home');
     fs.writeFileSync(fileHome, 'i am a file');
-    process.env.SKILL_SCOUT_HOME = fileHome;
+    process.env.SINGULAR_HOME = fileHome;
     assert.doesNotThrow(() => log('info', 'into a file'));
     assert.equal(fs.readFileSync(fileHome, 'utf8'), 'i am a file', 'the file is untouched');
 
     const under = path.join(fileHome, 'sub');
-    process.env.SKILL_SCOUT_HOME = under;
+    process.env.SINGULAR_HOME = under;
     assert.doesNotThrow(() => log('info', 'under a file'));
     assert.ok(!fs.existsSync(under));
   });
 
   test('never writes to stdout or stderr (stdout of a hook is the hook output)', () => {
     const home = path.join(ROOT, 'log-quiet');
-    process.env.SKILL_SCOUT_HOME = home;
+    process.env.SINGULAR_HOME = home;
     const cyc = {}; cyc.self = cyc;
     const out = silenced(() => {
       log('info', 'a', { b: 1 });
       log('error', 'c', { err: new Error('x') });
       log('info', 'cyclic', cyc);
-      process.env.SKILL_SCOUT_HOME = path.join(ROOT, 'log-quiet-missing', 'deep');
+      process.env.SINGULAR_HOME = path.join(ROOT, 'log-quiet-missing', 'deep');
       fs.mkdirSync(path.join(ROOT, 'log-quiet-missing'), { recursive: true });
       fs.writeFileSync(path.join(ROOT, 'log-quiet-missing', 'deep'), '');
       log('info', 'unwritable');
     });
     assert.deepEqual(out, []);
-    assert.equal(readLines(path.join(home, 'scout.log')).length, 2);
+    assert.equal(readLines(path.join(home, 'singular.log')).length, 2);
   });
 
-  test('respects process.env at call time: changing SKILL_SCOUT_HOME between calls switches files; a relative value falls back to $HOME', () => {
+  test('respects process.env at call time: changing SINGULAR_HOME between calls switches files; a relative value falls back to $HOME', () => {
     const a = path.join(ROOT, 'log-switch-a');
     const b = path.join(ROOT, 'log-switch-b');
-    process.env.SKILL_SCOUT_HOME = a;
+    process.env.SINGULAR_HOME = a;
     log('info', 'to-a');
-    process.env.SKILL_SCOUT_HOME = b;
+    process.env.SINGULAR_HOME = b;
     log('info', 'to-b');
-    assert.deepEqual(readLines(path.join(a, 'scout.log')).map((l) => JSON.parse(l).msg), ['to-a']);
-    assert.deepEqual(readLines(path.join(b, 'scout.log')).map((l) => JSON.parse(l).msg), ['to-b']);
+    assert.deepEqual(readLines(path.join(a, 'singular.log')).map((l) => JSON.parse(l).msg), ['to-a']);
+    assert.deepEqual(readLines(path.join(b, 'singular.log')).map((l) => JSON.parse(l).msg), ['to-b']);
 
-    process.env.SKILL_SCOUT_HOME = 'relative-home';
+    process.env.SINGULAR_HOME = 'relative-home';
     process.env.HOME = path.join(ROOT, 'fakehome-rel');
     log('info', 'to-fallback');
-    const fallback = path.join(process.env.HOME, '.claude', 'skill-scout', 'scout.log');
+    const fallback = path.join(process.env.HOME, '.claude', 'singular', 'singular.log');
     assert.deepEqual(readLines(fallback).map((l) => JSON.parse(l).msg), ['to-fallback']);
     assert.ok(!fs.existsSync(path.resolve('relative-home')), 'nothing created relative to the cwd');
   });
@@ -215,10 +215,10 @@ describe('log()', () => {
   test('a line is appended even when the file already has content without a trailing newline', () => {
     const home = path.join(ROOT, 'log-append');
     fs.mkdirSync(home, { recursive: true });
-    fs.writeFileSync(path.join(home, 'scout.log'), '{"ts":"old","level":"info","msg":"legacy"}');
-    process.env.SKILL_SCOUT_HOME = home;
+    fs.writeFileSync(path.join(home, 'singular.log'), '{"ts":"old","level":"info","msg":"legacy"}');
+    process.env.SINGULAR_HOME = home;
     log('info', 'new');
-    const text = fs.readFileSync(path.join(home, 'scout.log'), 'utf8');
+    const text = fs.readFileSync(path.join(home, 'singular.log'), 'utf8');
     assert.ok(text.startsWith('{"ts":"old"'), 'existing bytes kept');
     assert.ok(text.endsWith('"msg":"new"}\n'));
   });
@@ -227,14 +227,14 @@ describe('log()', () => {
 // ---------------------------------------------------------------------------
 
 describe('rotation', () => {
-  test('a log larger than 2 MiB is renamed to scout.log.1 before the append; the new scout.log holds only the new line', () => {
+  test('a log larger than 2 MiB is renamed to singular.log.1 before the append; the new singular.log holds only the new line', () => {
     const home = path.join(ROOT, 'log-rotate');
     fs.mkdirSync(home, { recursive: true });
-    const file = path.join(home, 'scout.log');
+    const file = path.join(home, 'singular.log');
     const oldContent = `${'{"msg":"old"}\n'.repeat(1)}${'x'.repeat(MAX_LOG_BYTES)}\n`;
     fs.writeFileSync(file, oldContent);
     assert.ok(fs.statSync(file).size > MAX_LOG_BYTES);
-    process.env.SKILL_SCOUT_HOME = home;
+    process.env.SINGULAR_HOME = home;
     log('info', 'after-rotate', { n: 1 });
     assert.equal(fs.readFileSync(`${file}.1`, 'utf8'), oldContent, 'old bytes moved verbatim');
     const lines = readLines(file);
@@ -246,10 +246,10 @@ describe('rotation', () => {
   test('exactly 2 MiB is NOT rotated (the threshold is strictly greater than)', () => {
     const home = path.join(ROOT, 'log-exact');
     fs.mkdirSync(home, { recursive: true });
-    const file = path.join(home, 'scout.log');
+    const file = path.join(home, 'singular.log');
     fs.writeFileSync(file, 'y'.repeat(MAX_LOG_BYTES));
     assert.equal(fs.statSync(file).size, MAX_LOG_BYTES);
-    process.env.SKILL_SCOUT_HOME = home;
+    process.env.SINGULAR_HOME = home;
     log('info', 'appended');
     assert.ok(!fs.existsSync(`${file}.1`));
     assert.ok(fs.statSync(file).size > MAX_LOG_BYTES);
@@ -260,18 +260,18 @@ describe('rotation', () => {
     assert.deepEqual(readLines(file).map((l) => JSON.parse(l).msg), ['rotates-now']);
   });
 
-  test('a second rotation replaces scout.log.1 (only one generation is kept)', () => {
+  test('a second rotation replaces singular.log.1 (only one generation is kept)', () => {
     const home = path.join(ROOT, 'log-rotate-twice');
     fs.mkdirSync(home, { recursive: true });
-    const file = path.join(home, 'scout.log');
-    process.env.SKILL_SCOUT_HOME = home;
+    const file = path.join(home, 'singular.log');
+    process.env.SINGULAR_HOME = home;
     fs.writeFileSync(file, 'A'.repeat(MAX_LOG_BYTES + 1));
     log('info', 'one');
     assert.equal(fs.readFileSync(`${file}.1`, 'utf8')[0], 'A');
     fs.writeFileSync(file, 'B'.repeat(MAX_LOG_BYTES + 1));
     log('info', 'two');
     assert.equal(fs.readFileSync(`${file}.1`, 'utf8')[0], 'B');
-    assert.deepEqual(fs.readdirSync(home).sort(), ['scout.log', 'scout.log.1'], 'no .2');
+    assert.deepEqual(fs.readdirSync(home).sort(), ['singular.log', 'singular.log.1'], 'no .2');
     assert.deepEqual(readLines(file).map((l) => JSON.parse(l).msg), ['two']);
   });
 
@@ -279,12 +279,12 @@ describe('rotation', () => {
     if (process.platform === 'win32' || (typeof process.getuid === 'function' && process.getuid() === 0)) { t.skip('permissions not enforced'); return; }
     const home = path.join(ROOT, 'log-rotate-fail');
     fs.mkdirSync(home, { recursive: true });
-    const file = path.join(home, 'scout.log');
+    const file = path.join(home, 'singular.log');
     fs.writeFileSync(file, 'Z'.repeat(MAX_LOG_BYTES + 1));
-    // scout.log.1 as a non-empty directory: renameSync over it throws (ENOTEMPTY / EISDIR); the file stays
+    // singular.log.1 as a non-empty directory: renameSync over it throws (ENOTEMPTY / EISDIR); the file stays
     fs.mkdirSync(`${file}.1`);
     fs.writeFileSync(path.join(`${file}.1`, 'child'), '');
-    process.env.SKILL_SCOUT_HOME = home;
+    process.env.SINGULAR_HOME = home;
     assert.doesNotThrow(() => log('info', 'still-appended'));
     const text = fs.readFileSync(file, 'utf8');
     assert.ok(text.startsWith('ZZZ'), 'old content still there: no rotation');

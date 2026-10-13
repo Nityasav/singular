@@ -1,15 +1,52 @@
 {
-  "name": "skill-scout",
-  "version": "0.1.0",
-  "description": "Claude Code plugin: per-prompt skill routing, stack detection, and gated, pinned, ephemeral discovery of third-party skills",
+  "name": "singular-skill",
+  "version": "0.2.0",
+  "description": "Singular: a Claude Code plugin for per-prompt skill routing, stack detection, and gated, pinned, ephemeral discovery of third-party skills. `npm install -g singular-skill && singular install`, then type /singular in Claude Code.",
   "type": "module",
-  "private": true,
+  "private": false,
+  "bin": {
+    "singular": "bin/singular-cli.js"
+  },
+  "files": [
+    "bin",
+    "lib",
+    "hooks",
+    "skills",
+    ".claude-plugin",
+    "README.md",
+    "LICENSE",
+    "config.example.json",
+    "docs/security.md",
+    "docs/spec.md",
+    "docs/testing.md"
+  ],
   "engines": {
     "node": ">=20"
   },
   "scripts": {
     "test": "node --test 'test/*.test.js'",
-    "e2e": "bash test/e2e/run.sh"
+    "e2e": "bash test/e2e/run.sh",
+    "prepublishOnly": "npm test"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nityasav/singular.git"
+  },
+  "homepage": "https://github.com/Nityasav/singular#readme",
+  "bugs": {
+    "url": "https://github.com/Nityasav/singular/issues"
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "plugin",
+    "skills",
+    "skills.sh",
+    "agent-skills",
+    "discovery",
+    "hooks",
+    "routing"
+  ],
+  "author": "Nitya Sav",
   "license": "MIT"
 }

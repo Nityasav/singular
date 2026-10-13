@@ -1,4 +1,4 @@
-// test/e2e/lib/claude.mjs — run `claude -p` with skill-scout loaded for that session only (the recipe from
+// test/e2e/lib/claude.mjs — run `claude -p` with singular loaded for that session only (the recipe from
 // test/e2e/README.md) and return the parsed stream.
 //
 //   const r = await runClaude(prompt, { root, cwd, home, model, allowedTools, permissionMode, resume, continueSession,
@@ -8,8 +8,8 @@
 // Flags, always: --output-format stream-json --verbose --include-hook-events --model <m> --max-budget-usd <b>
 //                --setting-sources project --strict-mcp-config --plugin-dir <root>, and --no-session-persistence
 //                unless `persist` is true (multi-turn cases); stdin is /dev/null unless `stdin` is a string.
-// Env: the caller's env plus SKILL_SCOUT_HOME=<home> (an absolute dir outside cwd: refused otherwise, because the
-//      hook would then fall back to the real ~/.claude/skill-scout) and extraEnv (SKILL_SCOUT_MODE, the test seams).
+// Env: the caller's env plus SINGULAR_HOME=<home> (an absolute dir outside cwd: refused otherwise, because the
+//      hook would then fall back to the real ~/.claude/singular) and extraEnv (SINGULAR_MODE, the test seams).
 // "Not logged in" anywhere in the output throws SkipError; so does a rejected rate limit (`rate_limit_event`, result
 // "You've hit your session limit"), with the reset time in the message.
 
@@ -46,9 +46,9 @@ export async function runClaude(prompt, opts = {}) {
   if (!root || !fs.existsSync(path.join(root, '.claude-plugin', 'plugin.json'))) throw new Error(`runClaude: root ${root} is not a plugin directory`);
   if (!cwd || !fs.existsSync(cwd)) throw new Error(`runClaude: cwd ${cwd} does not exist`);
   if (!home || !path.isAbsolute(home)) throw new Error(`runClaude: home must be an absolute path (got ${home})`);
-  if (isInside(home, cwd)) throw new Error(`runClaude: SKILL_SCOUT_HOME ${home} is inside cwd ${cwd}; refusing (the hook would use the real ~/.claude/skill-scout)`);
+  if (isInside(home, cwd)) throw new Error(`runClaude: SINGULAR_HOME ${home} is inside cwd ${cwd}; refusing (the hook would use the real ~/.claude/singular)`);
   for (const [k, v] of Object.entries(extraEnv)) {
-    if (k === 'SKILL_SCOUT_HOME' && v !== home) throw new Error('runClaude: extraEnv must not override SKILL_SCOUT_HOME');
+    if (k === 'SINGULAR_HOME' && v !== home) throw new Error('runClaude: extraEnv must not override SINGULAR_HOME');
     if (k === 'HOME') throw new Error('runClaude: HOME must not be overridden for a live claude run (it breaks the login)');
   }
 
@@ -62,7 +62,7 @@ export async function runClaude(prompt, opts = {}) {
   if (continueSession) args.push('--continue');
   args.push(...extraArgs);
 
-  const env = { ...process.env, SKILL_SCOUT_HOME: home, ...extraEnv };
+  const env = { ...process.env, SINGULAR_HOME: home, ...extraEnv };
   const started = Date.now();
   // detached: claude is its own process group, so a timeout kills the whole tree (hooks, npx, git) and not just the CLI.
   const child = spawn('claude', args, { cwd, env, stdio: [typeof stdin === 'string' ? 'pipe' : 'ignore', 'pipe', 'pipe'], windowsHide: true, detached: process.platform !== 'win32' });
@@ -105,7 +105,7 @@ export async function runClaude(prompt, opts = {}) {
       fs.mkdirSync(path.dirname(outFile), { recursive: true });
       fs.writeFileSync(outFile, stdout);
       fs.writeFileSync(`${outFile.replace(/\.jsonl$/, '')}.err`, stderr);
-      fs.writeFileSync(`${outFile.replace(/\.jsonl$/, '')}.cmd`, `cwd: ${cwd}\nenv: ${Object.entries({ SKILL_SCOUT_HOME: home, ...extraEnv }).map(([k, v]) => `${k}=${v}`).join(' ')}\nclaude ${args.map((a) => (/\s/.test(a) ? JSON.stringify(a) : a)).join(' ')}\n`);
+      fs.writeFileSync(`${outFile.replace(/\.jsonl$/, '')}.cmd`, `cwd: ${cwd}\nenv: ${Object.entries({ SINGULAR_HOME: home, ...extraEnv }).map(([k, v]) => `${k}=${v}`).join(' ')}\nclaude ${args.map((a) => (/\s/.test(a) ? JSON.stringify(a) : a)).join(' ')}\n`);
     } catch {
       /* artifacts are best effort */
     }

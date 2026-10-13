@@ -15,7 +15,7 @@ export default {
     const h = ctx.promptHook(r);
     const c = h ? h.context : '';
     ctx.check(h && h.exitCode === 0, 'hook exit 0', h?.raw);
-    ctx.match(c, /^\[skill-scout\] Stack: Next\.js 16/, 'context has the Stack line');
+    ctx.match(c, /^\[singular\] Stack: Next\.js 16/, 'context has the Stack line');
     ctx.match(c, /Installed skills likely relevant: [^\n]*e2e-tailwind-landing \(matches [^)]*(tailwind|landing|pricing)/i, 'routing matched the inner text against the seeded project skill');
     const clauses = [...c.matchAll(/\(matches ([^)]*)\)/g)].map((m) => m[1]);
     ctx.check(clauses.every((cl) => !/\b(pasted|content|p9)\b/i.test(cl)), 'no wrapper token in any (matches ...) clause', clauses);

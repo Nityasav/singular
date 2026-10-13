@@ -12,9 +12,9 @@ export default {
     const h = ctx.promptHook(r);
     const c = h ? h.context : '';
     ctx.check(h && h.exitCode === 0, 'hook exit 0', h?.raw);
-    ctx.match(c, /^\[skill-scout\] Stack: Next\.js 16/, 'Stack line present');
+    ctx.match(c, /^\[singular\] Stack: Next\.js 16/, 'Stack line present');
     ctx.excludes(c, 'Third-party candidates', 'no third-party candidates');
-    ctx.excludes(c, '/scout-load', 'no /scout-load suggestion');
+    ctx.excludes(c, '/singular load', 'no /singular load suggestion');
     ctx.eq(reg.requests.length, 0, 'the mock registry received zero requests');
     ctx.eq(h ? h.systemMessage : '', '', 'no systemMessage');
     const line = ctx.readLog(w.home).filter((l) => l.msg === 'on-prompt').pop();

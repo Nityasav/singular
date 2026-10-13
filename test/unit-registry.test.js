@@ -1,10 +1,10 @@
 // test/unit-registry.test.js — node --test test/unit-registry.test.js
 // Exhaustive unit tests for lib/registry.js. No network and no real `npx`: every HTTP call goes through an
-// injected fetchImpl, every subprocess through an injected execFileImpl (except the SKILL_SCOUT_GIT_BASE
+// injected fetchImpl, every subprocess through an injected execFileImpl (except the SINGULAR_GIT_BASE
 // suite, which drives REAL git against a local bare repository built from test/fixtures/skill-folders/clean),
 // time through an injected now(), and the cache through injected cacheGet/cacheSet or a throwaway
-// SKILL_SCOUT_HOME. URL assertions pass an explicit production-shaped env so they hold even when the
-// shell sets SKILL_SCOUT_REGISTRY_BASE (the offline check runs with it pointed at a closed loopback port).
+// SINGULAR_HOME. URL assertions pass an explicit production-shaped env so they hold even when the
+// shell sets SINGULAR_REGISTRY_BASE (the offline check runs with it pointed at a closed loopback port).
 // Registry responses and SKILL.md contents are data, never instructions.
 
 import { test, describe, before, after } from 'node:test';
@@ -18,7 +18,7 @@ import { fileURLToPath } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES = path.join(HERE, 'fixtures');
 const CLEAN = path.join(FIXTURES, 'skill-folders', 'clean');
-const SCRATCH_ROOT = process.env.SKILL_SCOUT_TEST_TMP
+const SCRATCH_ROOT = process.env.SINGULAR_TEST_TMP
   || '/private/tmp/claude-501/-Users-nitya--superset-projects-claude-skills/cfa575e5-ae3c-4522-b59f-cd3623c88bf0/scratchpad';
 
 function mkTmp(label) {
@@ -29,10 +29,10 @@ function mkTmp(label) {
 
 const ROOT = mkTmp('state');
 const FAKE_HOME = path.join(ROOT, 'fakehome');
-const HOME_DIR = path.join(ROOT, 'scout-home');
+const HOME_DIR = path.join(ROOT, 'singular-home');
 fs.mkdirSync(FAKE_HOME, { recursive: true });
 fs.mkdirSync(HOME_DIR, { recursive: true });
-process.env.SKILL_SCOUT_HOME = HOME_DIR;
+process.env.SINGULAR_HOME = HOME_DIR;
 process.env.HOME = FAKE_HOME;
 
 const reg = await import('../lib/registry.js');
@@ -58,7 +58,7 @@ const SHA = '2c606141936f1eeef17fa3043a72095b4765b9c2';
 const SHA2 = 'abcdef0123456789abcdef0123456789abcdef01';
 const BOGUS = '0'.repeat(40);
 /** Production-shaped env: no seams, state under the scratch dir. */
-const prodEnv = (extra = {}) => ({ SKILL_SCOUT_HOME: HOME_DIR, HOME: FAKE_HOME, PATH: process.env.PATH ?? '', ...extra });
+const prodEnv = (extra = {}) => ({ SINGULAR_HOME: HOME_DIR, HOME: FAKE_HOME, PATH: process.env.PATH ?? '', ...extra });
 const jsonResponse = (body, status = 200) => ({ ok: status >= 200 && status < 300, status, json: async () => body });
 const cand = (source, skill, installs, extra = {}) => ({ source, skill, installs, url: `https://skills.sh/${source}/${skill}`, ...extra });
 /** API-shaped search entry. */
@@ -182,11 +182,11 @@ describe('constants and endpoints', () => {
 
   test('endpoints(): production without the seam; loopback seam rewrites search+audit and keeps the path; non-loopback is refused', () => {
     assert.deepEqual(endpoints(prodEnv()), { search: SEARCH_URL, audit: AUDIT_URL, base: SKILLS_SITE });
-    assert.deepEqual(endpoints(prodEnv({ SKILL_SCOUT_REGISTRY_BASE: 'http://127.0.0.1:1' })), { search: 'http://127.0.0.1:1/api/search', audit: 'http://127.0.0.1:1/api/v1/skills/audit', base: 'http://127.0.0.1:1' });
-    assert.deepEqual(endpoints(prodEnv({ SKILL_SCOUT_REGISTRY_BASE: 'http://localhost:8080/fixture/' })), { search: 'http://localhost:8080/fixture/api/search', audit: 'http://localhost:8080/fixture/api/v1/skills/audit', base: 'http://localhost:8080/fixture' });
-    assert.deepEqual(endpoints(prodEnv({ SKILL_SCOUT_REGISTRY_BASE: 'https://[::1]:4443' })).base, 'https://[::1]:4443');
+    assert.deepEqual(endpoints(prodEnv({ SINGULAR_REGISTRY_BASE: 'http://127.0.0.1:1' })), { search: 'http://127.0.0.1:1/api/search', audit: 'http://127.0.0.1:1/api/v1/skills/audit', base: 'http://127.0.0.1:1' });
+    assert.deepEqual(endpoints(prodEnv({ SINGULAR_REGISTRY_BASE: 'http://localhost:8080/fixture/' })), { search: 'http://localhost:8080/fixture/api/search', audit: 'http://localhost:8080/fixture/api/v1/skills/audit', base: 'http://localhost:8080/fixture' });
+    assert.deepEqual(endpoints(prodEnv({ SINGULAR_REGISTRY_BASE: 'https://[::1]:4443' })).base, 'https://[::1]:4443');
     for (const bad of ['https://skills.evil', 'http://10.0.0.1', 'ftp://localhost', 'localhost:80', 'http://localhost/?q=1', 'http://localhost/#x', '']) {
-      assert.deepEqual(endpoints(prodEnv({ SKILL_SCOUT_REGISTRY_BASE: bad })), { search: SEARCH_URL, audit: AUDIT_URL, base: SKILLS_SITE }, bad);
+      assert.deepEqual(endpoints(prodEnv({ SINGULAR_REGISTRY_BASE: bad })), { search: SEARCH_URL, audit: AUDIT_URL, base: SKILLS_SITE }, bad);
     }
     assert.equal(typeof endpoints().search, 'string', 'default argument is process.env');
   });
@@ -310,7 +310,7 @@ describe('searchSkillsRaw / searchSkills', () => {
     assert.equal(init.method, 'GET');
     assert.ok(init.signal instanceof AbortSignal);
     assert.equal(init.headers.accept, 'application/json');
-    assert.match(init.headers['user-agent'], /^skill-scout\//);
+    assert.match(init.headers['user-agent'], /^singular\//);
     assert.deepEqual(await searchSkills('react hooks', { limit: 50 }, { fetchImpl, env: prodEnv() }), r.candidates, 'searchSkills returns candidates only');
   });
 
@@ -398,7 +398,7 @@ describe('searchSkillsRaw / searchSkills', () => {
 
   test('the registry seam redirects the request to the loopback base (display urls still point at skills.sh)', async () => {
     const fetchImpl = mockFetch(() => jsonResponse({ skills: [entry('a/b', 'c', 1)] }));
-    const r = await searchSkillsRaw('react', {}, { fetchImpl, env: prodEnv({ SKILL_SCOUT_REGISTRY_BASE: 'http://127.0.0.1:1/fx' }) });
+    const r = await searchSkillsRaw('react', {}, { fetchImpl, env: prodEnv({ SINGULAR_REGISTRY_BASE: 'http://127.0.0.1:1/fx' }) });
     assert.equal(fetchImpl.calls[0].url, 'http://127.0.0.1:1/fx/api/search?q=react&limit=200');
     assert.equal(r.candidates[0].url, 'https://skills.sh/a/b/c');
   });
@@ -513,7 +513,7 @@ describe('auditSkill', () => {
     assert.deepEqual(r.raw, { audits: [{ provider: 'a', status: 'pass' }, { provider: 'b', status: 'warn' }] });
     await auditSkill(' open.feishu.cn ', ' x.y_z ', {}, { fetchImpl, env: prodEnv() });
     assert.equal(fetchImpl.calls[1].url, 'https://skills.sh/api/v1/skills/audit/open.feishu.cn/x.y_z', 'trimmed; a domain source is a single segment');
-    await auditSkill('a/b', 'c', {}, { fetchImpl, env: prodEnv({ SKILL_SCOUT_REGISTRY_BASE: 'http://localhost:1' }) });
+    await auditSkill('a/b', 'c', {}, { fetchImpl, env: prodEnv({ SINGULAR_REGISTRY_BASE: 'http://localhost:1' }) });
     assert.equal(fetchImpl.calls[2].url, 'http://localhost:1/api/v1/skills/audit/a/b/c');
   });
 
@@ -661,7 +661,7 @@ describe('parseRefLocal / resolveHeadSha (wrapper)', () => {
     assert.deepEqual(exec.calls[0].args, ['ls-remote', 'https://github.com/o/r', 'HEAD']);
     assert.equal(exec.calls[0].opts.timeout, 99);
     const seam = mockExec(() => ({ stdout: `${SHA}\tHEAD\n` }));
-    await resolveHeadSha('o', 'r', {}, { execFileImpl: seam, env: prodEnv({ SKILL_SCOUT_GIT_BASE: `file://${ROOT}/g` }) });
+    await resolveHeadSha('o', 'r', {}, { execFileImpl: seam, env: prodEnv({ SINGULAR_GIT_BASE: `file://${ROOT}/g` }) });
     assert.equal(seam.calls[0].args[1], `file://${ROOT}/g/o/r`);
     await assert.rejects(resolveHeadSha('..', 'r', {}, { execFileImpl: exec, env: prodEnv() }), /invalid owner\/repo/);
   });
@@ -703,7 +703,7 @@ describe('stripCliWrapper', () => {
 
 describe('fetchSkillText (npx path, faked execFile)', () => {
   const tmp = () => path.join(ROOT, 'tmp-use');
-  const leftovers = () => (fs.existsSync(tmp()) ? fs.readdirSync(tmp()).filter((n) => n.startsWith('skill-scout-use-')) : []);
+  const leftovers = () => (fs.existsSync(tmp()) ? fs.readdirSync(tmp()).filter((n) => n.startsWith('singular-use-')) : []);
 
   test('regression (security review 2026-10-08): npm_config_registry / npm_config_cache / NODE_OPTIONS from the caller env never reach `npx skills`; the work dir comes from the hardened env, never from an in-project TMPDIR', async () => {
     const exec = mockExec(() => ({ stdout: USE_STDOUT('# hi') }));
@@ -739,7 +739,7 @@ describe('fetchSkillText (npx path, faked execFile)', () => {
     const c = exec.calls[0];
     assert.equal(c.file, 'npx');
     assert.deepEqual(c.args, ['-y', 'skills@1.5.26', 'use', `o/r#${SHA}@s`]);
-    assert.ok(cwdSeen.startsWith(path.join(path.resolve(tmp()), 'skill-scout-use-')), cwdSeen);
+    assert.ok(cwdSeen.startsWith(path.join(path.resolve(tmp()), 'singular-use-')), cwdSeen);
     assert.equal(c.opts.env.TMPDIR, cwdSeen, 'TMPDIR is the work dir');
     assert.equal(c.opts.env.DISABLE_TELEMETRY, '1');
     assert.equal(c.opts.env.GIT_TERMINAL_PROMPT, '0');
@@ -747,7 +747,7 @@ describe('fetchSkillText (npx path, faked execFile)', () => {
     assert.equal(c.opts.env.NO_UPDATE_NOTIFIER, '1');
     assert.equal(c.opts.env.LC_ALL, 'C');
     assert.equal(c.opts.env.KEEP, undefined, 'nothing else from the caller env reaches npx (allowlist: lib/git.js childEnv)');
-    for (const k of ['npm_config_registry', 'npm_config_cache', 'NPM_CONFIG_USERCONFIG', 'NODE_OPTIONS', 'NODE_PATH', 'NODE_TLS_REJECT_UNAUTHORIZED', 'GIT_CONFIG_COUNT', 'GIT_CONFIG_KEY_0', 'GIT_CONFIG_VALUE_0', 'SKILL_SCOUT_HOME']) assert.equal(c.opts.env[k], undefined, `${k} must not reach npx`);
+    for (const k of ['npm_config_registry', 'npm_config_cache', 'NPM_CONFIG_USERCONFIG', 'NODE_OPTIONS', 'NODE_PATH', 'NODE_TLS_REJECT_UNAUTHORIZED', 'GIT_CONFIG_COUNT', 'GIT_CONFIG_KEY_0', 'GIT_CONFIG_VALUE_0', 'SINGULAR_HOME']) assert.equal(c.opts.env[k], undefined, `${k} must not reach npx`);
     assert.deepEqual(Object.keys(c.opts.env).filter((k) => /^(npm_config_|NPM_CONFIG_|NODE_|GIT_)/.test(k)), ['GIT_TERMINAL_PROMPT'], 'no inherited npm_config_* / NODE_* / GIT_* keys');
     assert.deepEqual(c.opts.env, childEnv(env, { DISABLE_TELEMETRY: '1', TMPDIR: cwdSeen, NO_UPDATE_NOTIFIER: '1' }), 'exactly the allowlisted child environment plus our fixed values');
     assert.equal(c.opts.timeout, 1234);
@@ -879,7 +879,7 @@ describe('fetchSkillText (npx path, faked execFile)', () => {
     const r2 = await fetchSkillText(`o/r#${SHA2}@disk`, { cache: true }, { execFileImpl: exec2, env: prodEnv(), tmpdir: tmp(), cacheGet: () => { called++; return { text: 'wrong' }; } });
     assert.equal(r2.text, 'disk');
     assert.equal(called, 0);
-    assert.ok(fs.existsSync(cacheFile(`text:o/r#${SHA2}@disk`, prodEnv())), 'written to the disk cache under SKILL_SCOUT_HOME');
+    assert.ok(fs.existsSync(cacheFile(`text:o/r#${SHA2}@disk`, prodEnv())), 'written to the disk cache under SINGULAR_HOME');
     const r3 = await fetchSkillText(`o/r#${SHA2}@disk`, { cache: true }, { execFileImpl: exec2, env: prodEnv(), tmpdir: tmp() });
     assert.deepEqual(r3, { text: 'disk', sha: SHA2, ref: `o/r#${SHA2}@disk`, cached: true });
     assert.equal(exec2.calls.length, 1);
@@ -913,7 +913,7 @@ describe('fetchSkillText (npx path, faked execFile)', () => {
 
   test('git seam with a FAKED execFile: the clone steps run against <base>/<owner>/<repo>, no npx; a failing fetch step is reported', async () => {
     const base = path.join(ROOT, 'fake-git-base');
-    const env = prodEnv({ SKILL_SCOUT_GIT_BASE: base });
+    const env = prodEnv({ SINGULAR_GIT_BASE: base });
     const exec = mockExec((file, args, opts) => {
       assert.equal(file, 'git');
       if (args[0] === 'fetch') return execError({ code: 128, stderr: 'fatal: remote error: upload-pack: not our ref' });
@@ -925,7 +925,7 @@ describe('fetchSkillText (npx path, faked execFile)', () => {
     assert.equal(exec.calls[0].opts.env.LC_ALL, 'C');
     assert.equal(exec.calls[0].opts.timeout, 321);
     assert.ok(exec.calls[0].opts.cwd.endsWith(`${path.sep}repo`), 'clone target is <work>/repo');
-    assert.ok(exec.calls[0].opts.env.TMPDIR.startsWith(path.join(path.resolve(tmp()), 'skill-scout-use-')));
+    assert.ok(exec.calls[0].opts.env.TMPDIR.startsWith(path.join(path.resolve(tmp()), 'singular-use-')));
     assert.ok(!exec.calls.some((c) => c.file === 'npx'));
     assert.deepEqual(leftovers(), []);
     // an "init" that times out
@@ -938,7 +938,7 @@ describe('fetchSkillText (npx path, faked execFile)', () => {
 });
 
 // ---------------------------------------------------------------------------
-// fetchSkillText through REAL git (SKILL_SCOUT_GIT_BASE) against a local bare repository
+// fetchSkillText through REAL git (SINGULAR_GIT_BASE) against a local bare repository
 // ---------------------------------------------------------------------------
 
 describe('fetchSkillText (git seam, REAL git, local bare repo built from fixtures/skill-folders/clean)', () => {
@@ -970,7 +970,7 @@ describe('fetchSkillText (git seam, REAL git, local bare repo built from fixture
     g(['clone', '-q', '--bare', src, path.join(gitRoot, 'local-owner', 'repo')]);
   });
 
-  const seamEnv = (form = 'file') => prodEnv({ SKILL_SCOUT_GIT_BASE: form === 'file' ? `file://${gitRoot}` : gitRoot });
+  const seamEnv = (form = 'file') => prodEnv({ SINGULAR_GIT_BASE: form === 'file' ? `file://${gitRoot}` : gitRoot });
   const recording = () => { const calls = []; const impl = (file, args, opts, cb) => { calls.push({ file, args: [...args] }); return nodeExecFile(file, args, opts, cb); }; impl.calls = calls; return impl; };
 
   test('pinned ref by directory name: clones the commit with git (init/remote add/fetch --depth 1/checkout), reads SKILL.md verbatim, no npx, temp dir removed', async (t) => {
@@ -1179,14 +1179,14 @@ describe('sanitizeSkillText', () => {
     const body = 'y'.repeat(12000);
     const r = sanitizeSkillText(body);
     assert.equal(r.text.length, SKILL_TEXT_CAP);
-    assert.ok(r.text.endsWith('\n[skill-scout: truncated]'));
-    assert.equal(r.text.slice(0, 8975), 'y'.repeat(8975));
-    assert.deepEqual(r.stripped, [`truncated ${12000 - 8975} chars to 9000`]);
+    assert.ok(r.text.endsWith('\n[singular: truncated]'));
+    assert.equal(r.text.slice(0, 8978), 'y'.repeat(8978));
+    assert.deepEqual(r.stripped, [`truncated ${12000 - 8978} chars to 9000`]);
     assert.equal(sanitizeSkillText('z'.repeat(9000)).text.length, 9000, 'exactly 9000 is untouched');
     assert.deepEqual(sanitizeSkillText('z'.repeat(9000)).stripped, []);
     const over = sanitizeSkillText('z'.repeat(9001));
     assert.equal(over.text.length, 9000);
-    assert.deepEqual(over.stripped, ['truncated 26 chars to 9000']);
+    assert.deepEqual(over.stripped, ['truncated 23 chars to 9000']);
     // the cap is applied AFTER stripping: a 20k text whose shell block is removed can fit
     const fits = sanitizeSkillText(`${'a'.repeat(8000)}\n\`\`\`!\n${'x'.repeat(20000)}\n\`\`\`\n${'b'.repeat(500)}`);
     assert.equal(fits.text.length, 8000 + 1 + 500);
@@ -1728,8 +1728,8 @@ describe('discover', () => {
     assert.equal(r.cached, false);
   });
 
-  test('without cacheGet/cacheSet the on-disk cache under SKILL_SCOUT_HOME is used (second run served from disk)', async () => {
-    const env = prodEnv({ SKILL_SCOUT_HOME: path.join(ROOT, 'disk-cache-home') });
+  test('without cacheGet/cacheSet the on-disk cache under SINGULAR_HOME is used (second run served from disk)', async () => {
+    const env = prodEnv({ SINGULAR_HOME: path.join(ROOT, 'disk-cache-home') });
     const fetchImpl = registry();
     const r1 = await discover(P, { config: cfg(), deps: { fetchImpl, now: clock(), env } });
     assert.equal(r1.cached, false);
@@ -1741,13 +1741,13 @@ describe('discover', () => {
     assert.equal(fetchImpl.calls.length, n);
     assert.equal(r2.cached, true);
     assert.deepEqual(r2.candidates.map((x) => x.ref), r1.candidates.map((x) => x.ref));
-    assert.ok(!fs.existsSync(path.join(FAKE_HOME, '.claude', 'skill-scout', 'cache')), 'nothing under the fallback home');
+    assert.ok(!fs.existsSync(path.join(FAKE_HOME, '.claude', 'singular', 'cache')), 'nothing under the fallback home');
   });
 
   test('the registry seam redirects every discover request to the loopback base', async () => {
     const c = memCache();
     const fetchImpl = registry();
-    const r = await discover(P, { config: cfg(), deps: { fetchImpl, cacheGet: c.get, cacheSet: c.set, now: clock(), env: prodEnv({ SKILL_SCOUT_REGISTRY_BASE: 'http://127.0.0.1:1' }) } });
+    const r = await discover(P, { config: cfg(), deps: { fetchImpl, cacheGet: c.get, cacheSet: c.set, now: clock(), env: prodEnv({ SINGULAR_REGISTRY_BASE: 'http://127.0.0.1:1' }) } });
     assert.ok(fetchImpl.calls.length > 0);
     assert.ok(fetchImpl.urls().every((u) => u.startsWith('http://127.0.0.1:1/api/')), fetchImpl.urls().join('\n'));
     assert.equal(r.candidates[0].url, 'https://skills.sh/anthropics/claude-plugins-official/stripe-best-practices', 'display urls stay on skills.sh');

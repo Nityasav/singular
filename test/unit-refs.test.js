@@ -2,7 +2,7 @@
 // Exhaustive unit tests for lib/refs.js: the ref grammar (parse / format / unpin / case-normalise / sha
 // helpers) against valid, malformed and hostile strings, and resolveHeadSha with a faked git (argv, env,
 // timeout, failure classification) plus one real `git ls-remote` against a local bare repository through
-// the SKILL_SCOUT_GIT_BASE seam. No network.
+// the SINGULAR_GIT_BASE seam. No network.
 
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const CLEAN = path.join(HERE, 'fixtures', 'skill-folders', 'clean');
-const SCRATCH_ROOT = process.env.SKILL_SCOUT_TEST_TMP
+const SCRATCH_ROOT = process.env.SINGULAR_TEST_TMP
   || '/private/tmp/claude-501/-Users-nitya--superset-projects-claude-skills/cfa575e5-ae3c-4522-b59f-cd3623c88bf0/scratchpad';
 
 function mkTmp(label) {
@@ -26,7 +26,7 @@ function mkTmp(label) {
 const ROOT = mkTmp('state');
 const FAKE_HOME = path.join(ROOT, 'fakehome');
 fs.mkdirSync(FAKE_HOME, { recursive: true });
-process.env.SKILL_SCOUT_HOME = path.join(ROOT, 'scout-home');
+process.env.SINGULAR_HOME = path.join(ROOT, 'singular-home');
 process.env.HOME = FAKE_HOME;
 
 const refs = await import('../lib/refs.js');
@@ -38,7 +38,7 @@ after(() => { try { fs.rmSync(ROOT, { recursive: true, force: true }); } catch {
 const SHA = '2c606141936f1eeef17fa3043a72095b4765b9c2';
 const SHA2 = 'abcdef0123456789abcdef0123456789abcdef01';
 /** A production-shaped env: no test seams, state under the scratch dir. */
-const prodEnv = () => ({ SKILL_SCOUT_HOME: process.env.SKILL_SCOUT_HOME, HOME: FAKE_HOME, PATH: process.env.PATH ?? '' });
+const prodEnv = () => ({ SINGULAR_HOME: process.env.SINGULAR_HOME, HOME: FAKE_HOME, PATH: process.env.PATH ?? '' });
 
 /** execFile mock: handler(file, args, opts) -> {stdout, stderr} | Error. Records calls; callback is async. */
 function mockExec(handler, { child = () => ({ stdin: { end() {} } }) } = {}) {
@@ -270,7 +270,7 @@ describe('resolveHeadSha (faked git)', () => {
       assert.equal(c.opts.env[k], undefined, `${k} must not reach git`);
     }
     assert.deepEqual(Object.keys(c.opts.env).filter((k) => /^GIT_/.test(k)), ['GIT_TERMINAL_PROMPT'], 'the only GIT_* variable is ours');
-    assert.equal(c.opts.env.SKILL_SCOUT_HOME, undefined, 'the seams and state dir are not for git');
+    assert.equal(c.opts.env.SINGULAR_HOME, undefined, 'the seams and state dir are not for git');
     assert.equal(c.opts.env.HTTPS_PROXY, 'http://proxy.example:3128', 'proxy variables pass (a proxy cannot forge a verified TLS peer)');
     assert.equal(c.opts.env.no_proxy, 'localhost');
     assert.equal(c.opts.env.HOME, FAKE_HOME, 'HOME passes: ~/.gitconfig is the user\'s own (http.sslCAInfo, insteadOf for mirrors)');
@@ -376,22 +376,22 @@ describe('resolveHeadSha (faked git)', () => {
   });
 
   test('deps default to process.env and the real execFile (observable: the seam var in process.env changes the URL)', async () => {
-    const saved = process.env.SKILL_SCOUT_GIT_BASE;
+    const saved = process.env.SINGULAR_GIT_BASE;
     const localBase = path.join(ROOT, 'does-not-exist-base');
-    process.env.SKILL_SCOUT_GIT_BASE = localBase;
+    process.env.SINGULAR_GIT_BASE = localBase;
     try {
       const exec = mockExec(() => ({ stdout: HEAD_OUT }));
       assert.equal(await resolveHeadSha('o', 'r', {}, { execFileImpl: exec }), SHA);
       assert.deepEqual(exec.calls[0].args, ['ls-remote', `${localBase}/o/r`, 'HEAD'], 'process.env seam honoured when deps.env is omitted');
     } finally {
-      if (saved === undefined) delete process.env.SKILL_SCOUT_GIT_BASE; else process.env.SKILL_SCOUT_GIT_BASE = saved;
+      if (saved === undefined) delete process.env.SINGULAR_GIT_BASE; else process.env.SINGULAR_GIT_BASE = saved;
     }
   });
 
-  test('SKILL_SCOUT_GIT_BASE seam: a local path or file:// URL replaces github.com; http(s) and relative values are refused (production URL)', async () => {
+  test('SINGULAR_GIT_BASE seam: a local path or file:// URL replaces github.com; http(s) and relative values are refused (production URL)', async () => {
     const urlFor = async (base) => {
       const exec = mockExec(() => ({ stdout: HEAD_OUT }));
-      await resolveHeadSha('o', 'r', {}, { execFileImpl: exec, env: { ...prodEnv(), SKILL_SCOUT_GIT_BASE: base } });
+      await resolveHeadSha('o', 'r', {}, { execFileImpl: exec, env: { ...prodEnv(), SINGULAR_GIT_BASE: base } });
       return exec.calls[0].args[1];
     };
     assert.equal(await urlFor(`${ROOT}/gitbase/`), `${ROOT}/gitbase/o/r`, 'trailing slash dropped');
@@ -405,7 +405,7 @@ describe('resolveHeadSha (faked git)', () => {
 
 // ---------------------------------------------------------------------------
 
-describe('resolveHeadSha (REAL git against a local bare repository via SKILL_SCOUT_GIT_BASE)', () => {
+describe('resolveHeadSha (REAL git against a local bare repository via SINGULAR_GIT_BASE)', () => {
   let gitRoot = null;
   let sha = null;
   const gitOk = spawnSync('git', ['--version'], { encoding: 'utf8' }).status === 0;
@@ -433,16 +433,16 @@ describe('resolveHeadSha (REAL git against a local bare repository via SKILL_SCO
     if (!gitOk) { t.skip('git not on PATH'); return; }
     const calls = [];
     const recording = (file, args, opts, cb) => { calls.push({ file, args }); return nodeExecFile(file, args, opts, cb); };
-    const viaFile = await resolveHeadSha('local-owner', 'repo', { timeoutMs: 20000 }, { execFileImpl: recording, env: { ...prodEnv(), SKILL_SCOUT_GIT_BASE: `file://${gitRoot}` } });
+    const viaFile = await resolveHeadSha('local-owner', 'repo', { timeoutMs: 20000 }, { execFileImpl: recording, env: { ...prodEnv(), SINGULAR_GIT_BASE: `file://${gitRoot}` } });
     assert.equal(viaFile, sha);
     assert.deepEqual(calls[0].args, ['ls-remote', `file://${gitRoot}/local-owner/repo`, 'HEAD']);
-    const viaPath = await resolveHeadSha('local-owner', 'repo', { timeoutMs: 20000 }, { env: { ...prodEnv(), SKILL_SCOUT_GIT_BASE: gitRoot } });
+    const viaPath = await resolveHeadSha('local-owner', 'repo', { timeoutMs: 20000 }, { env: { ...prodEnv(), SINGULAR_GIT_BASE: gitRoot } });
     assert.equal(viaPath, sha);
   });
 
   test('a repository that does not exist under the base fails with a described git error (no hang, no prompt)', async (t) => {
     if (!gitOk) { t.skip('git not on PATH'); return; }
-    await assert.rejects(resolveHeadSha('local-owner', 'missing', { timeoutMs: 20000 }, { env: { ...prodEnv(), SKILL_SCOUT_GIT_BASE: `file://${gitRoot}` } }), (err) => {
+    await assert.rejects(resolveHeadSha('local-owner', 'missing', { timeoutMs: 20000 }, { env: { ...prodEnv(), SINGULAR_GIT_BASE: `file://${gitRoot}` } }), (err) => {
       assert.match(err.message, new RegExp(`^git ls-remote file://${gitRoot.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/local-owner/missing failed \\(exit 128\\)`));
       return true;
     });
@@ -472,13 +472,13 @@ describe('resolveHeadSha (REAL git against a local bare repository via SKILL_SCO
     const raw = spawnSync('git', ['ls-remote', `file://${gitRoot}/local-owner/repo`, 'HEAD'], { encoding: 'utf8', env: { ...process.env, HOME: FAKE_HOME, GIT_TERMINAL_PROMPT: '0', ...rewrite } });
     assert.equal(raw.status, 0, raw.stderr);
     assert.equal(raw.stdout.slice(0, 40), sha2, 'precondition: git itself follows the insteadOf rewrite');
-    // skill-scout: the variables are stripped, the base repository answers
-    const got = await resolveHeadSha('local-owner', 'repo', { timeoutMs: 20000 }, { env: { ...prodEnv(), SKILL_SCOUT_GIT_BASE: `file://${gitRoot}`, ...rewrite } });
+    // singular: the variables are stripped, the base repository answers
+    const got = await resolveHeadSha('local-owner', 'repo', { timeoutMs: 20000 }, { env: { ...prodEnv(), SINGULAR_GIT_BASE: `file://${gitRoot}`, ...rewrite } });
     assert.equal(got, sha, 'the rewrite never reaches git');
   });
 
   test('a 1 ms timeout kills the real process and reports a timeout', async (t) => {
     if (!gitOk) { t.skip('git not on PATH'); return; }
-    await assert.rejects(resolveHeadSha('local-owner', 'repo', { timeoutMs: 1 }, { env: { ...prodEnv(), SKILL_SCOUT_GIT_BASE: `file://${gitRoot}` } }), /timed out after 1ms|failed \(exit/);
+    await assert.rejects(resolveHeadSha('local-owner', 'repo', { timeoutMs: 1 }, { env: { ...prodEnv(), SINGULAR_GIT_BASE: `file://${gitRoot}` } }), /timed out after 1ms|failed \(exit/);
   });
 });

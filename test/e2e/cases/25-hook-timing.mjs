@@ -1,4 +1,4 @@
-// Hook in-process timing from the isolated scout.log, correlated by session_id: warm runs stay under 2 s and there
+// Hook in-process timing from the isolated singular.log, correlated by session_id: warm runs stay under 2 s and there
 // are no warnings other than the announced test seams.
 import { PROMPT_CLASSES, seamEnv } from '../lib/prompts.mjs';
 

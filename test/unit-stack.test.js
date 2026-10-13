@@ -14,7 +14,7 @@ import path from 'node:path';
 
 import { detectStack, clearStackCache, majorOf, gitBranch, stripJsonComments, SUMMARY_MAX, STACK_TTL_MS } from '../lib/stack.js';
 
-const SCRATCH_ROOT = process.env.SKILL_SCOUT_TEST_TMP
+const SCRATCH_ROOT = process.env.SINGULAR_TEST_TMP
   || '/private/tmp/claude-501/-Users-nitya--superset-projects-claude-skills/cfa575e5-ae3c-4522-b59f-cd3623c88bf0/scratchpad';
 const IS_ROOT = typeof process.getuid === 'function' && process.getuid() === 0;
 
@@ -267,7 +267,7 @@ describe('.git/HEAD and gitBranch', () => {
     const co = project({ 'real/HEAD': 'ref: refs/heads/rel\n', 'checkout/.git': 'gitdir: ../real\n' });
     assert.equal(gitBranch(path.join(co, 'checkout')), 'rel');
     assert.equal(gitBranch(project({ '.git': 'not a pointer\n' })), '');
-    assert.equal(gitBranch(project({ '.git': 'gitdir: /nonexistent/skill-scout-test\n' })), '');
+    assert.equal(gitBranch(project({ '.git': 'gitdir: /nonexistent/singular-test\n' })), '');
     assert.equal(gitBranch(project({ '.git': '' })), '');
   });
 

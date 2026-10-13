@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES = path.join(HERE, 'fixtures');
-const SCRATCH_ROOT = process.env.SKILL_SCOUT_TEST_TMP
+const SCRATCH_ROOT = process.env.SINGULAR_TEST_TMP
   || '/private/tmp/claude-501/-Users-nitya--superset-projects-claude-skills/cfa575e5-ae3c-4522-b59f-cd3623c88bf0/scratchpad';
 
 function mkTmp(label) {
@@ -26,7 +26,7 @@ function mkTmp(label) {
 }
 
 const ROOT = mkTmp('state');
-process.env.SKILL_SCOUT_HOME = path.join(ROOT, 'scout-home');
+process.env.SINGULAR_HOME = path.join(ROOT, 'singular-home');
 process.env.HOME = path.join(ROOT, 'home');
 
 const { inspectSkillFolder, scanRawFrontmatter, FORBIDDEN_DIRS, FORBIDDEN_FILES, FORBIDDEN_FRONTMATTER } = await import('../lib/inspect.js');

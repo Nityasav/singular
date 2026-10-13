@@ -1,4 +1,4 @@
-// Non-asserting metric on sonnet: does the model end its reply with `Load with /scout-load <ref>` when the hook
+// Non-asserting metric on sonnet: does the model end its reply with `Load with /singular load <ref>` when the hook
 // offers candidates? The hook side (candidates present, systemMessage) is asserted; the relay is reported as INFO.
 import { PLAYWRIGHT, seamEnv } from '../lib/prompts.mjs';
 
@@ -15,7 +15,7 @@ export default {
     ctx.check(h && h.exitCode === 0, 'hook exit 0', h?.raw);
     ctx.includes(c, 'Third-party candidates (not loaded):', 'candidates offered to the model');
     ctx.match(h ? h.systemMessage : '', /may fit this prompt/, 'user told through systemMessage regardless of the relay');
-    const relayed = /\/scout-load [A-Za-z0-9-]+\/[A-Za-z0-9._-]+@[A-Za-z0-9._-]+/.test(r.result);
-    ctx.info(`sonnet (${r.model}) relay: ${relayed ? 'RELAYED a /scout-load line' : 'did not relay'}; $${r.costUsd.toFixed(4)}; ${r.wallMs} ms; result tail: ${r.result.replace(/\s+/g, ' ').slice(-160)}`);
+    const relayed = /\/singular load [A-Za-z0-9-]+\/[A-Za-z0-9._-]+@[A-Za-z0-9._-]+/.test(r.result);
+    ctx.info(`sonnet (${r.model}) relay: ${relayed ? 'RELAYED a /singular load line' : 'did not relay'}; $${r.costUsd.toFixed(4)}; ${r.wallMs} ms; result tail: ${r.result.replace(/\s+/g, ' ').slice(-160)}`);
   },
 };

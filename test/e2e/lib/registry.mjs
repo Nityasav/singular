@@ -1,5 +1,5 @@
 // test/e2e/lib/registry.mjs — a scripted stand-in for skills.sh on a loopback port, wired into the plugin
-// through the SKILL_SCOUT_REGISTRY_BASE test seam (lib/config.js honours loopback http(s) only).
+// through the SINGULAR_REGISTRY_BASE test seam (lib/config.js honours loopback http(s) only).
 //
 //   const reg = await startRegistry({ mode: 'ok' });      // modes: ok | delay | 429 | 500 | garbage | hostile | down
 //   reg.base                                               // http://127.0.0.1:<port>

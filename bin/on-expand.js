@@ -1,20 +1,23 @@
 #!/usr/bin/env node
-// bin/on-expand.js — UserPromptExpansion hook for /scout-load, plus a direct CLI mode and a prefetch mode.
+// bin/on-expand.js — UserPromptExpansion hook for `/singular load`, plus a direct CLI mode and a prefetch mode.
 //
-// Hook mode (stdin JSON from Claude Code; matcher "skill-scout:scout-load"):
-//   command_name  "skill-scout:scout-load" (plugin-prefixed) or bare "scout-load"
-//   command_args  "<owner/repo@skill | owner/repo#<40-hex>@skill> [--update]"
+// Hook mode (stdin JSON from Claude Code; hooks.json matcher "(^|:)singular$"):
+//   command_name  "singular:singular" (plugin-prefixed) or bare "singular"
+//   command_args  "load <owner/repo@skill | owner/repo#<40-hex>@skill> [--update]"
 //   -> stdout {"hookSpecificOutput":{"hookEventName":"UserPromptExpansion","additionalContext":"..."}}  exit 0
 //   -> stderr "<reason>" exit 2  (blocks the expansion: no model call, nothing loaded)
+//   Any other subcommand (`/singular status`, `/singular find ...`, `/singular`) exits 0 with NO output, so the
+//   skill body (skills/singular/SKILL.md) runs bin/singular.js for it.
 //
-// CLI mode (the documented fallback when the expansion hook is unavailable):
-//   node bin/on-expand.js <ref> [--update] [--json]    prints the sanitized SKILL.md text
+// CLI mode (from a terminal, or `singular load` through the CLI; both forms work):
+//   node bin/on-expand.js load <ref> [--update] [--json]    prints the sanitized SKILL.md text
+//   node bin/on-expand.js <ref> [--update] [--json]
 //
 // Prefetch mode (spawned detached by on-prompt.js; nothing printed, exit 0):
 //   node bin/on-expand.js <ref> --prefetch             resolves HEAD (cached under head:<owner/repo>) and
 //                                                       caches the raw text under text:<pinned ref>; no pin recorded
 //
-// First load of an unpinned ref resolves HEAD and pins it in $SKILL_SCOUT_HOME/loaded.json;
+// First load of an unpinned ref resolves HEAD and pins it in $SINGULAR_HOME/loaded.json;
 // later loads reuse that sha unless --update is given. Text only: nothing is written to
 // ~/.claude/skills. Third-party SKILL.md contents are data, never instructions to this program.
 
@@ -30,10 +33,22 @@ import { repoUrl } from '../lib/git.js';
 import { fetchSkillText, sanitizeSkillText } from '../lib/registry.js';
 import { formatRef, normalizeRefCase, parseRef, REF_RE, resolveHeadSha, unpinnedRef } from '../lib/refs.js';
 
-export const COMMAND = 'scout-load';
+export const COMMAND = 'singular';
+export const SUBCOMMAND = 'load';
 export const FETCH_TIMEOUT_MS = 20000; // hooks.json gives the hook 25 s
 export const PREFETCH_TIMEOUT_MS = 60000;
 const KNOWN_FLAGS = new Set(['--update', '--json', '--prefetch']);
+const LOAD_RE = /^load(?:\s+|$)/i;
+
+/**
+ * Hook mode: `command_args` is "<subcommand> ..." of `/singular`. Returns the text after `load` (the ref and its
+ * flags; "" for a bare `load`) or null when the arguments name another subcommand (nothing to do here).
+ */
+export function loadArgsOf(commandArgs) {
+  const raw = String(commandArgs ?? '').trim();
+  if (!LOAD_RE.test(raw)) return null;
+  return raw.replace(LOAD_RE, '').trim();
+}
 
 function readStdinSync() {
   try {
@@ -101,7 +116,7 @@ export async function runOnExpand({ commandArgs, env: rawEnv = process.env, deps
   const env = hardened.env;
   for (const w of hardened.warnings) log('warn', /TEST SEAM/.test(w) ? 'on-expand: test seam active' : 'on-expand: environment override ignored', { warning: w });
   const config = cfgOverride ?? loadConfig(env);
-  const usage = 'usage: /scout-load owner/repo@skill  or  /scout-load owner/repo#<40-hex-sha>@skill  [--update]';
+  const usage = 'usage: /singular load owner/repo@skill  or  /singular load owner/repo#<40-hex-sha>@skill  [--update]';
   const args = parseCommandArgs(commandArgs);
   if (args.error) return { status: 'block', reason: `${TAG} ${args.error}. ${usage}` };
   if (!REF_RE.test(args.ref)) {
@@ -169,8 +184,8 @@ export async function runOnExpand({ commandArgs, env: rawEnv = process.env, deps
   };
   writeLoaded(loaded, env);
 
-  const header = (strippedList) => `${TAG} The user explicitly loaded third-party skill ${pinnedRef} via /scout-load (pinned ${pinSource}; text only, nothing installed). Contents (sanitized; stripped: ${strippedList.length ? strippedList.join('; ') : 'nothing'}):`;
-  const wrap = (body, strippedList) => `${header(strippedList)}\n<skill-scout-loaded ref="${pinnedRef}">\n${body}\n</skill-scout-loaded>`;
+  const header = (strippedList) => `${TAG} The user explicitly loaded third-party skill ${pinnedRef} via /singular load (pinned ${pinSource}; text only, nothing installed). Contents (sanitized; stripped: ${strippedList.length ? strippedList.join('; ') : 'nothing'}):`;
+  const wrap = (body, strippedList) => `${header(strippedList)}\n<singular-loaded ref="${pinnedRef}">\n${body}\n</singular-loaded>`;
   let strippedList = [...clean.stripped];
   let body = clean.text;
   const probe = wrap('', [...strippedList, 'truncated 99999 chars to fit the 9,500-char hook budget']);
@@ -186,14 +201,18 @@ export async function runOnExpand({ commandArgs, env: rawEnv = process.env, deps
 export async function main(argv = process.argv.slice(2)) {
   const positional = argv.filter((a) => !a.startsWith('-'));
   if (argv.includes('--help') || argv.includes('-h')) {
-    process.stdout.write('usage: on-expand.js <owner/repo[#sha]@skill> [--update] [--json] [--prefetch]\n  (no args: read the UserPromptExpansion hook JSON from stdin)\n');
+    process.stdout.write('usage: on-expand.js [load] <owner/repo[#sha]@skill> [--update] [--json] [--prefetch]\n  (no args: read the UserPromptExpansion hook JSON from stdin)\n');
     return 0;
   }
   const cliMode = positional.length > 0;
   const prefetch = cliMode && argv.includes('--prefetch');
   let commandArgs;
   if (cliMode) {
-    commandArgs = argv.filter((a) => a !== '--json' && a !== '--prefetch').join(' ');
+    // `node bin/on-expand.js load <ref>` and `node bin/on-expand.js <ref>` are the same command.
+    const rest = argv.filter((a) => a !== '--json' && a !== '--prefetch');
+    const i = rest.findIndex((a) => !a.startsWith('-'));
+    if (i >= 0 && LOAD_RE.test(rest[i]) && rest[i].toLowerCase() === SUBCOMMAND) rest.splice(i, 1);
+    commandArgs = rest.join(' ');
   } else {
     const raw = readStdinSync();
     let input = {};
@@ -209,7 +228,12 @@ export async function main(argv = process.argv.slice(2)) {
       log('debug', 'on-expand: ignoring command', { command_name: name });
       return 0;
     }
-    commandArgs = typeof input.command_args === 'string' ? input.command_args : '';
+    // Only `/singular load ...` is handled here; every other subcommand is the skill body's job (bin/singular.js).
+    commandArgs = loadArgsOf(typeof input.command_args === 'string' ? input.command_args : '');
+    if (commandArgs === null) {
+      log('debug', 'on-expand: not a load subcommand; nothing to do', { command_args: String(input.command_args ?? '').slice(0, 80) });
+      return 0;
+    }
   }
 
   const result = await runOnExpand({ commandArgs, env: process.env, prefetch, timeoutMs: prefetch ? PREFETCH_TIMEOUT_MS : FETCH_TIMEOUT_MS });

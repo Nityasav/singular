@@ -23,7 +23,7 @@ export default {
       const h = ctx.promptHook(r);
       const c = h ? h.context : '';
       ctx.check(h && h.exitCode === 0, `${row.id}: hook exit 0 (answered within the timeout)`, h?.raw ?? r.hookStarted);
-      ctx.match(c, /^\[skill-scout\] Stack: Next\.js 16/, `${row.id}: Stack line first`);
+      ctx.match(c, /^\[singular\] Stack: Next\.js 16/, `${row.id}: Stack line first`);
       ctx.check(c.length <= 2000, `${row.id}: context within budget`, c.length);
       ctx.eq(r.exitCode, 0, `${row.id}: claude exit 0`);
       const line = ctx.readLog(w.home).filter((l) => l.msg === 'on-prompt').pop();

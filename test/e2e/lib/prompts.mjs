@@ -1,7 +1,7 @@
 // test/e2e/lib/prompts.mjs — prompts shared by the cases. Every live prompt tells the model not to use tools
 // (keeps haiku runs at one turn and under a cent) unless the case is about tools.
 
-export const STACK_ECHO = 'Reply with exactly one line: the full text of the line in your context that begins with [skill-scout] Stack: (or the word NONE if there is no such line). Do not use any tools.';
+export const STACK_ECHO = 'Reply with exactly one line: the full text of the line in your context that begins with [singular] Stack: (or the word NONE if there is no such line). Do not use any tools.';
 
 export const PLAYWRIGHT = 'write playwright e2e tests for the checkout flow in this app. Do not write files or use tools; just outline the test plan in 3 bullets.';
 export const PRICING = 'design a pricing page with three tiers and a comparison table for our saas product. Do not use any tools; answer in three bullets.';
@@ -35,12 +35,12 @@ export const REF_RE = /^[A-Za-z0-9][A-Za-z0-9-]*\/[A-Za-z0-9][A-Za-z0-9._-]*(#[0
 
 export function seamEnv({ registry, gitBase } = {}) {
   const env = {};
-  if (registry) env.SKILL_SCOUT_REGISTRY_BASE = registry.base;
-  if (gitBase) env.SKILL_SCOUT_GIT_BASE = gitBase.base;
+  if (registry) env.SINGULAR_REGISTRY_BASE = registry.base;
+  if (gitBase) env.SINGULAR_GIT_BASE = gitBase.base;
   return env;
 }
 
-/** Every `/scout-load <ref>` mentioned in a text (the literal `<ref>` placeholder of the relay instruction excluded). */
+/** Every `/singular load <ref>` mentioned in a text (the literal `<ref>` placeholder of the relay instruction excluded). */
 export function loadRefs(text) {
-  return [...String(text ?? '').matchAll(/\/scout-load\s+(\S+)/g)].map((m) => m[1].replace(/[;,.)`]+$/, '')).filter((r) => !r.startsWith('<'));
+  return [...String(text ?? '').matchAll(/\/singular load\s+(\S+)/g)].map((m) => m[1].replace(/[;,.)`]+$/, '')).filter((r) => !r.startsWith('<'));
 }

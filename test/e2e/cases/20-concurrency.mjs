@@ -1,4 +1,4 @@
-// Three parallel claude runs share one SKILL_SCOUT_HOME: every hook answers, the log has one line per session,
+// Three parallel claude runs share one SINGULAR_HOME: every hook answers, the log has one line per session,
 // no error lines, no leftover temp files in the cache.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -19,7 +19,7 @@ export default {
     rs.forEach((r, i) => {
       const h = ctx.promptHook(r);
       ctx.check(h && h.exitCode === 0, `run ${i + 1}: hook exit 0`, h?.raw);
-      ctx.match(h ? h.context : '', /^\[skill-scout\] Stack: Next\.js 16/, `run ${i + 1}: Stack line`);
+      ctx.match(h ? h.context : '', /^\[singular\] Stack: Next\.js 16/, `run ${i + 1}: Stack line`);
       ctx.eq(r.exitCode, 0, `run ${i + 1}: claude exit 0`);
     });
     const ids = new Set(rs.map((r) => r.sessionId));

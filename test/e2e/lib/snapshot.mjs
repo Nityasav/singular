@@ -2,9 +2,9 @@
 //
 //   globalSnapshot()  -> text: sha256 of ~/.claude/settings.json, ~/.claude/settings.local.json,
 //                        ~/.claude/plugins/installed_plugins.json and the listing of ~/.claude/skills (a change FAILS the run)
-//   scoutSnapshot()   -> text: mtime/size of the REAL ~/.claude/skill-scout state files (config.json, loaded.json,
-//                        installed.json, scout.log, cache entry count); the plugin is loaded only via --plugin-dir with a
-//                        redirected SKILL_SCOUT_HOME, so any change means isolation leaked (reported as a FAIL too)
+//   singularSnapshot()   -> text: mtime/size of the REAL ~/.claude/singular state files (config.json, loaded.json,
+//                        installed.json, singular.log, cache entry count); the plugin is loaded only via --plugin-dir with a
+//                        redirected SINGULAR_HOME, so any change means isolation leaked (reported as a FAIL too)
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -33,10 +33,10 @@ export function globalSnapshot(home = realHome()) {
   return lines.join('\n');
 }
 
-export function scoutSnapshot(home = realHome()) {
-  const dir = path.join(home, '.claude', 'skill-scout');
+export function singularSnapshot(home = realHome()) {
+  const dir = path.join(home, '.claude', 'singular');
   const lines = [];
-  for (const f of ['config.json', 'loaded.json', 'installed.json', 'scout.log', '.auto-mode-warned']) {
+  for (const f of ['config.json', 'loaded.json', 'installed.json', 'singular.log', '.auto-mode-warned']) {
     const file = path.join(dir, f);
     try {
       const st = fs.statSync(file);

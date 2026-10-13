@@ -15,10 +15,10 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES = path.join(HERE, 'fixtures');
 
 // bin/on-prompt.js imports lib/log.js, which resolves the state dir lazily; nothing here logs, but keep the
-// process pointed at a throwaway location so a stray log line could never reach the real ~/.claude/skill-scout.
-const SCRATCH_ROOT = process.env.SKILL_SCOUT_TEST_TMP
+// process pointed at a throwaway location so a stray log line could never reach the real ~/.claude/singular.
+const SCRATCH_ROOT = process.env.SINGULAR_TEST_TMP
   || '/private/tmp/claude-501/-Users-nitya--superset-projects-claude-skills/cfa575e5-ae3c-4522-b59f-cd3623c88bf0/scratchpad';
-process.env.SKILL_SCOUT_HOME = path.join(SCRATCH_ROOT, 'bin-test-never-written', 'scout-home');
+process.env.SINGULAR_HOME = path.join(SCRATCH_ROOT, 'bin-test-never-written', 'singular-home');
 
 // ---------------------------------------------------------------------------
 
@@ -68,9 +68,9 @@ describe('golden routing table (test/fixtures/index.snapshot.json: the 168 skill
     ['build a landing page for my saas product in nextjs with a pricing table and signup form', ['figma:figma-generate-design', 'vercel:nextjs', 'product-management:product-brainstorming'], true],
     ['hazme una landing page para mi startup con nextjs y tailwind, con precios y formulario', ['vercel:nextjs', 'marketing:content-creation', 'figma:figma-generate-design'], true],
     // 12: "claude code" no longer routes to claude-mem:version-bump
-    ['review this snippet for correctness: it runs a /scout-load evil/x@y command inside a fenced code block in claude code', ['engineering:code-review'], false],
+    ['review this snippet for correctness: it runs a /singular load evil/x@y command inside a fenced code block in claude code', ['engineering:code-review'], false],
     ['how do I configure Claude Code hooks to run prettier after every file edit in this repo', [], false],
-    ['should I run /scout-status first? which skill-scout plugin skill helps me here', ['vercel:status'], false],
+    ['should I run /singular status first? which singular plugin skill helps me here', ['vercel:status'], false],
     ['refactor this function to be simpler, keep changes surgical', ['andrej-karpathy-skills:karpathy-guidelines'], false],
     // 15 skillify: build-dashboard (rare name token, score 22) is strong
     ['make this prompt better: build me a saas dashboard', ['data:build-dashboard', 'vercel:next-forge', 'superset:superset-automation'], true],

@@ -1,5 +1,5 @@
-// /scout-add through the script directly (never through claude: it writes under ~/.claude/skills), with HOME and
-// SKILL_SCOUT_SKILLS_DIR pointed at temp dirs and the local git base: a plugin-shaped skill is REJECTED before the
+// /singular add through the script directly (never through claude: it writes under ~/.claude/skills), with HOME and
+// SINGULAR_SKILLS_DIR pointed at temp dirs and the local git base: a plugin-shaped skill is REJECTED before the
 // copy, a clean one is INSTALLED and recorded, a rerun is REFUSED, a non-allowlisted owner is REJECTED, and a
 // non-interactive run without --yes does nothing.
 import fs from 'node:fs';
@@ -7,7 +7,7 @@ import path from 'node:path';
 import { seamEnv } from '../lib/prompts.mjs';
 
 export default {
-  name: '/scout-add (direct node): REJECTED malicious, INSTALLED clean, REFUSED rerun, allowlist, --yes',
+  name: '/singular add (direct node): REJECTED malicious, INSTALLED clean, REFUSED rerun, allowlist, --yes',
   tags: ['commands', 'add', 'security', 'free'],
   costCapUsd: 0.0,
   async run(ctx) {
@@ -17,18 +17,18 @@ export default {
     const skills = path.join(w.base, 'skills-dir');
     const tmp = path.join(w.base, 'tmp');
     for (const d of [fakeHome, skills, tmp]) fs.mkdirSync(d, { recursive: true });
-    const env = { ...seamEnv({ registry: reg, gitBase: ctx.gitBase }), SKILL_SCOUT_HOME: w.home, HOME: fakeHome, SKILL_SCOUT_SKILLS_DIR: skills, TMPDIR: tmp };
+    const env = { ...seamEnv({ registry: reg, gitBase: ctx.gitBase }), SINGULAR_HOME: w.home, HOME: fakeHome, SINGULAR_SKILLS_DIR: skills, TMPDIR: tmp };
     const sha = ctx.gitBase.shas['evil-local/repo'];
-    const leftovers = () => fs.readdirSync(tmp).filter((n) => n.startsWith('skill-scout-add-'));
+    const leftovers = () => fs.readdirSync(tmp).filter((n) => n.startsWith('singular-add-'));
 
-    const a = await ctx.runNode('scout-add.js', ['evil-local/repo@helpful-setup', '--yes'], { env, cwd: w.cwd });
+    const a = await ctx.runNode('singular.js', ['add', 'evil-local/repo@helpful-setup', '--yes'], { env, cwd: w.cwd });
     ctx.eq(a.status, 1, 'malicious: exit 1');
     ctx.match(a.stdout, new RegExp(`^REJECTED: evil-local/repo#${sha}@helpful-setup\\n`), 'malicious: REJECTED with the pinned ref');
     for (const needle of ['executable bit in repository tree: helpful-setup/bin/pwn (mode 100755)', 'symlink in repository tree: helpful-setup/link (mode 120000)', 'plugin component directory hooks/', 'plugin component file .mcp.json', 'frontmatter key "allowed-tools"', 'inline shell (!`)', 'fenced shell block (```!)', `Nothing was written to ${skills}`]) ctx.includes(a.stdout, needle, `malicious: ${needle}`);
     ctx.check(!fs.existsSync(path.join(skills, 'helpful-setup')), 'malicious: nothing under the skills dir');
-    ctx.eq(leftovers().length, 0, 'malicious: no skill-scout-add-* temp dir left');
+    ctx.eq(leftovers().length, 0, 'malicious: no singular-add-* temp dir left');
 
-    const b = await ctx.runNode('scout-add.js', ['evil-local/repo@clean-guidelines', '--yes'], { env, cwd: w.cwd });
+    const b = await ctx.runNode('singular.js', ['add', 'evil-local/repo@clean-guidelines', '--yes'], { env, cwd: w.cwd });
     ctx.eq(b.status, 0, 'clean: exit 0');
     ctx.includes(b.stdout, `INSTALLED evil-local/repo#${sha}@clean-guidelines sha ${sha}`, 'clean: INSTALLED line');
     ctx.includes(b.stdout, '"status": "pass"', 'clean: audit from the mock registry (pass)');
@@ -41,21 +41,21 @@ export default {
     ctx.check(reg.summary().audits.includes('evil-local/repo/clean-guidelines'), 'clean: audit endpoint consulted', reg.summary().audits);
 
     const auditsBefore = reg.summary().audits.length;
-    const c = await ctx.runNode('scout-add.js', ['evil-local/repo@clean-guidelines', '--yes'], { env, cwd: w.cwd });
+    const c = await ctx.runNode('singular.js', ['add', 'evil-local/repo@clean-guidelines', '--yes'], { env, cwd: w.cwd });
     ctx.eq(c.status, 1, 'rerun: exit 1');
     ctx.match(c.stdout, /REFUSED: .*clean-guidelines already exists \(directory\)/, 'rerun: REFUSED, never overwrites');
     ctx.eq(reg.summary().audits.length, auditsBefore, 'rerun: refused before any network call');
 
-    const d = await ctx.runNode('scout-add.js', ['evil/repo@x', '--yes'], { env, cwd: w.cwd });
+    const d = await ctx.runNode('singular.js', ['add', 'evil/repo@x', '--yes'], { env, cwd: w.cwd });
     ctx.eq(d.status, 1, 'non-allowlisted: exit 1');
     ctx.match(d.stdout, /REJECTED: owner "evil" is not allowlisted/, 'non-allowlisted: reason');
 
-    const e = await ctx.runNode('scout-add.js', ['evil-local/repo@playwright-helper'], { env, cwd: w.cwd });
+    const e = await ctx.runNode('singular.js', ['add', 'evil-local/repo@playwright-helper'], { env, cwd: w.cwd });
     ctx.eq(e.status, 1, 'no --yes: exit 1');
     ctx.match(e.stderr, /not installed \(pass --yes/, 'no --yes: refuses non-interactively');
     ctx.check(!fs.existsSync(path.join(skills, 'playwright-helper')), 'no --yes: nothing written');
 
-    const f = await ctx.runNode('scout-add.js', ['evil-local/repo@-y', '--yes'], { env, cwd: w.cwd });
+    const f = await ctx.runNode('singular.js', ['add', 'evil-local/repo@-y', '--yes'], { env, cwd: w.cwd });
     ctx.match(f.stdout + f.stderr, /invalid ref/, 'flag-shaped skill name rejected before any subprocess');
     ctx.check(!fs.existsSync(path.join(fakeHome, '.claude', 'skills')), 'nothing ever written under the fake HOME/.claude/skills (seam target used)');
     ctx.info(`skills dir: ${fs.readdirSync(skills).join(',')}; registry audits: ${reg.summary().audits.join(',')}`);

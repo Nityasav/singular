@@ -1,9 +1,9 @@
-// test/e2e/lib/gitbase.mjs — build a local git base for the SKILL_SCOUT_GIT_BASE test seam: a directory tree
-// <base>/<owner>/<repo> of bare repositories so that `git ls-remote`, the pinned fetch (`/scout-load`, auto,
-// pinnedSkills, the background prefetch) and `/scout-add` never touch github.com.
+// test/e2e/lib/gitbase.mjs — build a local git base for the SINGULAR_GIT_BASE test seam: a directory tree
+// <base>/<owner>/<repo> of bare repositories so that `git ls-remote`, the pinned fetch (`/singular load`, auto,
+// pinnedSkills, the background prefetch) and `/singular add` never touch github.com.
 //
 //   const gb = await buildGitBase(dir)      // dir must be absolute and OUTSIDE every test cwd
-//   gb.base                                  // file:///abs/dir   (value for SKILL_SCOUT_GIT_BASE)
+//   gb.base                                  // file:///abs/dir   (value for SINGULAR_GIT_BASE)
 //   gb.shas['multica-ai/andrej-karpathy-skills']   // HEAD sha of each repo
 //
 // Repositories:

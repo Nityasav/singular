@@ -6,8 +6,8 @@
   "permission_mode": "default",
   "hook_event_name": "UserPromptExpansion",
   "expansion_type": "slash_command",
-  "command_name": "spike-plugin:scout-load",
-  "command_args": "multica-ai/andrej-karpathy-skills@karpathy-guidelines",
+  "command_name": "singular:singular",
+  "command_args": "load multica-ai/andrej-karpathy-skills@karpathy-guidelines",
   "command_source": "plugin",
-  "prompt": "/spike-plugin:scout-load multica-ai/andrej-karpathy-skills@karpathy-guidelines"
+  "prompt": "/singular:singular load multica-ai/andrej-karpathy-skills@karpathy-guidelines"
 }

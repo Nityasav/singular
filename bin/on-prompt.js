@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// bin/on-prompt.js — UserPromptSubmit hook entrypoint for skill-scout.
+// bin/on-prompt.js — UserPromptSubmit hook entrypoint for singular.
 //
 // Hook mode:   reads the hook JSON on stdin, prints {"hookSpecificOutput":{...additionalContext}} or nothing.
 // Dry-run:     node bin/on-prompt.js --dry-run "<prompt>" [--cwd <dir>] [--json] [--verbose] [--session <id>]
@@ -12,7 +12,7 @@
 // strong local match) rank the prompt against the cached allowlisted-owner catalogs plus at most two
 // single tech-lexicon words searched on skills.sh (`q=stripe`; never free-form prompt text; see
 // docs/security.md "Outbound data"). HEAD shas are read from the cache only; a detached background prefetch
-// (`on-expand.js <ref> --prefetch`) resolves the pin and caches the skill text so `/scout-load` and the
+// (`on-expand.js <ref> --prefetch`) resolves the pin and caches the skill text so `/singular load` and the
 // next auto prompt are instant. Auto mode fetches inline only when the text is cached or enough budget
 // is left for a cold `npx skills use`.
 
@@ -44,10 +44,18 @@ export const MIN_AUTO_FETCH_MS = 4500; // measured: a warm `npx skills use` take
 export const MIN_RESOLVE_MS = 1200;
 export const HEAD_CACHE_PREFIX = 'head:';
 export const SESSION_TTL_HOURS = 24 * 7;
-// One factual line for prompts that talk about skill-scout itself: four of the five commands are
-// user-only (disable-model-invocation), so the model cannot see them and would otherwise guess.
-export const COMMANDS_HINT = 'skill-scout commands (typed by the user): /scout-status (config, pins, cache), /scout-find <query> (search skills.sh; also model-invocable), /scout-load owner/repo@skill (load text into this session), /scout-mode <off|local|suggest|auto>, /scout-add owner/repo@skill (pinned persistent install).';
-const MENTIONS_SCOUT_RE = /\bskill-scout\b|\/scout-(?:status|find|load|mode|add)\b|\bscout\b/i;
+// One factual line for prompts that talk about singular itself: /singular is user-only (disable-model-invocation),
+// so the model cannot see its subcommands and would otherwise guess them.
+export const COMMANDS_HINT = 'singular commands (typed by the user): /singular (status + help), /singular status (config, pins, cache), /singular find <query> (search skills.sh; the singular-find skill is also model-invocable), /singular load owner/repo@skill (load text into this session), /singular mode <off|local|suggest|auto>, /singular add owner/repo@skill (pinned persistent install).';
+// A prompt is about the plugin when it names the command (/singular, /singular-find) or uses the word next to a
+// plugin noun; the word alone is ordinary English ("singular value decomposition") and must not trigger the hint.
+const SINGULAR_COMMAND_RE = /\/singular(?:-find)?\b/i;
+const SINGULAR_WORD_RE = /\bsingular\b/i;
+const SINGULAR_TOPIC_RE = /\b(?:skills?|plugins?|commands?|modes?|status|config|hooks?)\b/i;
+export function mentionsSingular(text) {
+  const s = String(text ?? '');
+  return SINGULAR_COMMAND_RE.test(s) || (SINGULAR_WORD_RE.test(s) && SINGULAR_TOPIC_RE.test(s));
+}
 const ON_EXPAND = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'on-expand.js');
 const PASTED_WRAPPER_RE = /^[ \t]*<\/?pasted_content(?:\s+id="[^"]*")?>[ \t]*$/gm;
 // Synthetic prompts Claude Code delivers to the main agent (2.1.293): a backgrounded subagent's completion
@@ -90,7 +98,7 @@ export function normalizePrompt(prompt) {
 /**
  * Why a prompt gets no routing. The slash-command rule follows Claude Code's own: a command is expanded only
  * when the RAW prompt starts with `/`, so a pasted block whose first inner line is a slash command
- * (`<pasted_content>\n/scout-load ...`) is a normal prompt and keeps its stack + routing.
+ * (`<pasted_content>\n/singular load ...`) is a normal prompt and keeps its stack + routing.
  */
 export function skipReason(clean, config, raw = clean) {
   const t = clean;
@@ -199,7 +207,7 @@ function autoWarning(home, { persist = true } = {}) {
       /* ignore */
     }
   }
-  return `${TAG} WARNING: mode "auto" is enabled. Third-party skill text from allowlisted skills.sh sources will be injected into your prompts without confirmation. It is text only (nothing is installed), pinned to a commit and sanitized, but it is still untrusted prose. Run /scout-mode suggest (or edit ${path.join(home, 'config.json')}) to require /scout-load. This warning is shown once.`;
+  return `${TAG} WARNING: mode "auto" is enabled. Third-party skill text from allowlisted skills.sh sources will be injected into your prompts without confirmation. It is text only (nothing is installed), pinned to a commit and sanitized, but it is still untrusted prose. Run /singular mode suggest (or edit ${path.join(home, 'config.json')}) to require /singular load. This warning is shown once.`;
 }
 
 /**
@@ -230,7 +238,7 @@ export function suggestionMessage(candidates, { sessionId, cache }) {
     }
   }
   if (fresh.length === 0) return null;
-  return `${TAG} ${fresh.length} third-party skill${fresh.length > 1 ? 's' : ''} may fit this prompt (not loaded): ${fresh.map((r) => `/scout-load ${r}`).join(', ')}`;
+  return `${TAG} ${fresh.length} third-party skill${fresh.length > 1 ? 's' : ''} may fit this prompt (not loaded): ${fresh.map((r) => `/singular load ${r}`).join(', ')}`;
 }
 
 /** Split config.pinnedSkills into installed names (hint) and allowlisted refs (text), dropping the rest with warnings. */
@@ -303,21 +311,21 @@ export async function runOnPrompt({ prompt, cwd, sessionId = null, env: rawEnv =
     timings,
     warnings: [...hardened.warnings, ...(config.warnings ?? [])],
   };
-  const mentionsScout = config.mode !== 'off' && MENTIONS_SCOUT_RE.test(clean);
+  const aboutSingular = config.mode !== 'off' && mentionsSingular(clean);
   const skip = skipReason(clean, config, prompt);
   if (skip) {
     result.skipped = skip;
-    // "show me the skill-scout status" (30 chars) is under minPromptChars but asks about the plugin itself:
+    // "show me the singular status" (30 chars) is under minPromptChars but asks about the plugin itself:
     // answer with the command list only (no index, no stack, no network).
-    if (mentionsScout && /shorter than minPromptChars/.test(skip)) {
+    if (aboutSingular && /shorter than minPromptChars/.test(skip)) {
       result.hint = true;
       result.context = `${TAG} ${COMMANDS_HINT}`;
     }
     timings.totalMs = t.elapsed();
     return result;
   }
-  const notes = mentionsScout ? [COMMANDS_HINT] : [];
-  if (mentionsScout) result.hint = true;
+  const notes = aboutSingular ? [COMMANDS_HINT] : [];
+  if (aboutSingular) result.hint = true;
   const budget = Math.max(500, Number(config.totalBudgetMs) || 6000);
   const now = deps.now ?? Date.now;
   const deadline = now() + budget;
@@ -379,7 +387,7 @@ export async function runOnPrompt({ prompt, cwd, sessionId = null, env: rawEnv =
   state.partial = composeContext(composeArgs());
 
   if (wantPinned && pinned.refs.length > 0) {
-    // Load the first pinned ref's text (cached forever by pinned sha); pin like /scout-load does.
+    // Load the first pinned ref's text (cached forever by pinned sha); pin like /singular load does.
     const loadedPins = readLoadedPins(home);
     for (const parsed of pinned.refs) {
       const key = unpinnedRef(parsed);
@@ -498,7 +506,7 @@ export async function runOnPrompt({ prompt, cwd, sessionId = null, env: rawEnv =
         }
         timings.autoFetchMs = tFetch.elapsed();
       } else if (config.mode === 'suggest' && top && canPrefetch) {
-        // Make /scout-load (and a later auto prompt) instant: prefetch the top candidate once.
+        // Make /singular load (and a later auto prompt) instant: prefetch the top candidate once.
         const pinnedRef = top.sha ? `${top.source}#${top.sha}@${top.skill}` : null;
         let cached = false;
         if (pinnedRef) {
@@ -537,7 +545,7 @@ function printVerbose(result) {
   if (result.prefetched) lines.push(`${TAG} prefetched=${result.prefetched.join(', ')}`);
   if (result.autoError) lines.push(`${TAG} autoError=${result.autoError}`);
   if (result.autoSkipped) lines.push(`${TAG} autoSkipped=${result.autoSkipped}`);
-  if (result.hint) lines.push(`${TAG} hint=skill-scout command list appended`);
+  if (result.hint) lines.push(`${TAG} hint=singular command list appended`);
   if (result.systemMessage) lines.push(`${TAG} systemMessage=${result.systemMessage.replace(/\n/g, ' | ')}`);
   for (const w of result.warnings) lines.push(`${TAG} config warning: ${w}`);
   process.stderr.write(`${lines.join('\n')}\n`);
@@ -603,7 +611,7 @@ export async function main(argv = process.argv.slice(2)) {
     const result = await runOnPrompt({ prompt, cwd, sessionId, env: process.env, state, config, prefetch: hookMode || args.prefetch, dryRun: args.dryRun });
     clearTimeout(watchdog);
     if (args.verbose) printVerbose(result);
-    const debug = process.env.SKILL_SCOUT_DEBUG === '1';
+    const debug = process.env.SINGULAR_DEBUG === '1';
     log('info', 'on-prompt', {
       sessionId,
       promptId,

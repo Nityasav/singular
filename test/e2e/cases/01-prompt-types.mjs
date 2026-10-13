@@ -22,7 +22,7 @@ export default {
       ctx.eq(r.stderr.trim(), '', `${id}: claude stderr empty`);
       ctx.eq(h ? h.stderr.trim() : '', '', `${id}: hook stderr empty`);
       const c = h ? h.context : '';
-      ctx.match(c, /^\[skill-scout\] Stack: Next\.js 16/, `${id}: context starts with the Stack line`);
+      ctx.match(c, /^\[singular\] Stack: Next\.js 16/, `${id}: context starts with the Stack line`);
       ctx.check(c.length <= 2000, `${id}: context within contextBudgetChars (2000)`, c.length);
       ctx.check(r.result.trim().length > 0, `${id}: model produced a result`, r.result);
       if (id === 'non-english') {

@@ -16,7 +16,7 @@ import { buildIndex, parseFrontmatter, clearIndexCache, findProjectDirs, INDEX_T
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const FRONTMATTER = path.join(HERE, 'fixtures', 'frontmatter');
-const SCRATCH_ROOT = process.env.SKILL_SCOUT_TEST_TMP
+const SCRATCH_ROOT = process.env.SINGULAR_TEST_TMP
   || '/private/tmp/claude-501/-Users-nitya--superset-projects-claude-skills/cfa575e5-ae3c-4522-b59f-cd3623c88bf0/scratchpad';
 const IS_ROOT = typeof process.getuid === 'function' && process.getuid() === 0;
 

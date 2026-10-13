@@ -2,10 +2,10 @@
 // real `claude -p --output-format stream-json --verbose --include-hook-events` runs (Claude Code 2.1.293,
 // 2026-10-08; paths scrubbed). No network, no model: `node --test test/e2e/stream.test.mjs`.
 //
-//   stream-bash-turn.jsonl          /scout-mode local: UserPromptSubmit (empty, slash prompt), one Bash tool_use + tool_result
-//   stream-blocked-expansion.jsonl  /scout-load evil/repo@x: UserPromptExpansion exit 2, no model call, cost 0
+//   stream-bash-turn.jsonl          /singular mode local: UserPromptSubmit (empty, slash prompt), one Bash tool_use + tool_result
+//   stream-blocked-expansion.jsonl  /singular load evil/repo@x: UserPromptExpansion exit 2, no model call, cost 0
 //   stream-auto-context.jsonl       auto mode: UserPromptSubmit with a 9.5k loaded block and the one-time WARNING systemMessage
-//   stream-skill-tool.jsonl         (when present) natural "is there a skill for playwright": Skill tool_use + Bash scout-find.js
+//   stream-skill-tool.jsonl         (when present) natural "is there a skill for playwright": Skill tool_use + Bash singular.js find
 //   stream-subagent.jsonl           (when present) Agent tool turn: SubagentStart hook, parent_tool_use_id, two result events
 //   stream-rate-limited.jsonl       the account's session window exhausted (2.1.294, 2026-10-08): the hook ran, then a
 //                                   rate_limit_event (status rejected, resetsAt) and a synthetic result, no model call, cost 0
@@ -27,13 +27,13 @@ describe('test/e2e/lib/stream.mjs parseStream', () => {
     const p = parseStream(read('stream-bash-turn.jsonl'));
     assert.equal(p.unparsed, 0);
     assert.ok(p.init && p.sessionId, 'init event with session id');
-    assert.ok(p.plugins.includes('skill-scout@inline'), p.plugins);
+    assert.ok(p.plugins.includes('singular@inline'), p.plugins);
     const prompts = p.hooks('UserPromptSubmit');
     assert.equal(prompts.length, 1);
     assert.equal(prompts[0].exitCode, 0);
     assert.equal(prompts[0].context, '', 'a slash prompt gets no context');
     assert.deepEqual(p.toolUses, ['Bash']);
-    assert.match(p.bashCommands[0], /bin\/scout-mode\.js"? local/);
+    assert.match(p.bashCommands[0], /bin\/singular\.js"? mode local/);
     assert.equal(p.toolResults.length, 1);
     assert.match(p.toolResultText, /mode: suggest -> local/);
     assert.equal(p.results.length, 1);
@@ -61,10 +61,10 @@ describe('test/e2e/lib/stream.mjs parseStream', () => {
     const h = p.hooks('UserPromptSubmit')[0];
     assert.ok(h.json && h.json.hookSpecificOutput, 'parsed JSON envelope');
     assert.equal(h.json.hookSpecificOutput.hookEventName, 'UserPromptSubmit');
-    assert.match(h.context, /^\[skill-scout\] Stack: Next\.js 16/);
-    assert.match(h.context, /<skill-scout-loaded ref="vercel-labs\/agent-skills#[0-9a-f]{40}@playwright-testing">/);
+    assert.match(h.context, /^\[singular\] Stack: Next\.js 16/);
+    assert.match(h.context, /<singular-loaded ref="vercel-labs\/agent-skills#[0-9a-f]{40}@playwright-testing">/);
     assert.ok(h.context.length > 9000 && h.context.length <= 9500, String(h.context.length));
-    assert.match(h.systemMessage, /^\[skill-scout\] WARNING: mode "auto" is enabled/);
+    assert.match(h.systemMessage, /^\[singular\] WARNING: mode "auto" is enabled/);
     assert.equal(h.stderr, '');
     assert.ok(p.assistantText.length > 0);
   });
@@ -97,15 +97,15 @@ describe('test/e2e/lib/stream.mjs parseStream', () => {
   });
 
   test('a hook_response whose output is stdout+stderr concatenated still yields the context', () => {
-    const line = JSON.stringify({ type: 'system', subtype: 'hook_response', hook_event: 'SubagentStart', hook_name: 'SubagentStart', output: '{"hookSpecificOutput":{"hookEventName":"SubagentStart","additionalContext":"[skill-scout] Stack: X"}}\nsome stderr noise', stdout: '', stderr: 'some stderr noise', exit_code: 0, outcome: 'success' });
+    const line = JSON.stringify({ type: 'system', subtype: 'hook_response', hook_event: 'SubagentStart', hook_name: 'SubagentStart', output: '{"hookSpecificOutput":{"hookEventName":"SubagentStart","additionalContext":"[singular] Stack: X"}}\nsome stderr noise', stdout: '', stderr: 'some stderr noise', exit_code: 0, outcome: 'success' });
     const p = parseStream(line);
-    assert.equal(p.hooks('SubagentStart')[0].context, '[skill-scout] Stack: X');
+    assert.equal(p.hooks('SubagentStart')[0].context, '[singular] Stack: X');
   });
 
-  test('skill tool stream (optional fixture): Skill tool_use skill-scout:scout-find followed by Bash scout-find.js', { skip: !has('stream-skill-tool.jsonl') && 'fixture not captured yet' }, () => {
+  test('skill tool stream (optional fixture): Skill tool_use singular:singular-find followed by Bash singular.js find', { skip: !has('stream-skill-tool.jsonl') && 'fixture not captured yet' }, () => {
     const p = parseStream(read('stream-skill-tool.jsonl'));
-    assert.deepEqual(p.skillUses, ['skill-scout:scout-find']);
-    assert.ok(p.bashCommands.some((c) => /bin\/scout-find\.js/.test(c)), p.bashCommands);
+    assert.deepEqual(p.skillUses, ['singular:singular-find']);
+    assert.ok(p.bashCommands.some((c) => /bin\/singular\.js"? find/.test(c)), p.bashCommands);
     assert.match(p.toolResultText, /Third-party candidates/);
     assert.equal(p.hooks('UserPromptSubmit').length, 1);
   });
@@ -114,7 +114,7 @@ describe('test/e2e/lib/stream.mjs parseStream', () => {
     const p = parseStream(read('stream-subagent.jsonl'));
     const sub = p.hooks('SubagentStart');
     assert.ok(sub.length >= 1);
-    assert.match(sub[0].context, /^\[skill-scout\] Stack:/);
+    assert.match(sub[0].context, /^\[singular\] Stack:/);
     assert.ok(p.toolUseBlocks.some((b) => b.name === 'Agent'));
     assert.ok(p.toolUseBlocks.some((b) => b.parentToolUseId), 'a subagent tool_use carries parent_tool_use_id');
     assert.ok(p.results.length >= 1);

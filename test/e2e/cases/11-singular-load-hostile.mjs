@@ -1,10 +1,10 @@
-// Hostile /scout-load arguments are blocked by the expansion hook before any model call: exit 2, no
+// Hostile /singular load arguments are blocked by the expansion hook before any model call: exit 2, no
 // UserPromptSubmit, zero turns, zero cost, the reason in the result, loaded.json untouched.
 import fs from 'node:fs';
 import { seamEnv } from '../lib/prompts.mjs';
 
 export default {
-  name: '/scout-load hostile table: shell metachars, traversal, extra words, empty, over-long, non-allowlisted, blockedRefs',
+  name: '/singular load hostile table: shell metachars, traversal, extra words, empty, over-long, non-allowlisted, blockedRefs',
   tags: ['load', 'security', 'free'],
   costCapUsd: 0.0,
   async run(ctx) {
@@ -25,7 +25,7 @@ export default {
     let cost = 0;
     for (const row of rows) {
       const label = row.args.slice(0, 24) || '(empty)';
-      const r = await ctx.claude(`/scout-load ${row.args}`.trim(), { world: w, label: `hostile-${label}`, extraEnv: env });
+      const r = await ctx.claude(`/singular load ${row.args}`.trim(), { world: w, label: `hostile-${label}`, extraEnv: env });
       cost += r.costUsd;
       const x = r.hooks('UserPromptExpansion')[0];
       ctx.check(x && x.exitCode === 2, `${label}: UserPromptExpansion exit 2`, x?.raw);
