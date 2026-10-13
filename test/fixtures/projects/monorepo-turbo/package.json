@@ -1,0 +1,11 @@
+{
+  "name": "acme",
+  "private": true,
+  "packageManager": "pnpm@10.4.1",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": { "build": "turbo run build", "dev": "turbo run dev", "lint": "turbo run lint" },
+  "devDependencies": {
+    "turbo": "^2.3.0",
+    "typescript": "^5.8.2"
+  }
+}

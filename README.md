@@ -1,6 +1,6 @@
 # Singular
 
-Singular is a Claude Code plugin with one command, `/singular`, that finds the right skill for the prompt you are typing. On every prompt it routes to the skills you already have installed and injects the project's stack (Next.js 16, Tailwind 4, TypeScript strict, pnpm, branch) as one factual line; when nothing local fits, it looks up third-party skills on [skills.sh](https://skills.sh), ranks them by relevance to your prompt (never sending the prompt itself), gates them by an owner allowlist, an install floor and the public audit, and offers them as a one-line suggestion. `/singular load owner/repo@skill` then loads that skill's text into the session, pinned to a commit and sanitized, without writing anything to `~/.claude/skills`; `/singular add` installs it persistently only after the folder has been inspected for anything that would turn a skill into a plugin. Zero npm dependencies, Node >= 20, every piece is a plain `node` script you can run by hand.
+Singular is a Claude Code plugin with one command, `/singular`, that finds the right skill for the prompt you are typing. On every prompt it routes to the skills you already have installed and injects the project's stack (Next.js 16, Tailwind 4, TypeScript strict, pnpm, branch) as one factual line; when nothing local fits, it looks up third-party skills on [skills.sh](https://skills.sh), ranks them by relevance to your prompt (never sending the prompt itself), gates them by an owner allowlist, an install floor and the public audit, and offers them as a one-line suggestion. `/singular load owner/repo@skill` then loads that skill's text into the session, pinned to a commit and sanitized, without writing anything to `~/.claude/skills`; `/singular add` installs it persistently only after the folder has been inspected for anything that would turn a skill into a plugin. `/singular init` inspects the project you just opened, says which of its needs your installed skills already cover, proposes numbered, commit-pinned third-party candidates for the rest, and installs only the numbers you approve with `/singular init --apply`. Zero npm dependencies, Node >= 20, every piece is a plain `node` script you can run by hand.
 
 ## Get started (30 seconds)
 
@@ -23,7 +23,73 @@ node bin/singular-cli.js install
 
 Same result; `node bin/singular-cli.js` is the `singular` binary. To try the plugin for one session without installing anything: `claude --plugin-dir /path/to/singular` (it shows up as `singular@inline`).
 
-Requirements for the remote features: `git` on `PATH` (used for commit pinning and for `/singular add`), network access to `skills.sh` and `github.com`. `npx` runs only when a skill's *text* is fetched (`/singular load`, `mode: "auto"`, `pinnedSkills`, the background prefetch), always as the pinned `skills@1.5.26`; `/singular add` uses `git` only.
+Requirements for the remote features: `git` on `PATH` (used for commit pinning and for `/singular add`), network access to `skills.sh` and `github.com`. `npx` runs only when a skill's *text* is fetched (`/singular load`, `mode: "auto"`, `pinnedSkills`, the background prefetch), always as the pinned `skills@1.5.26`; `/singular add` and `/singular init --apply` use `git` only.
+
+## Set up a project (`/singular init`)
+
+"I just opened a project; which skills should I have?" Three steps; nothing is installed until the third.
+
+**1. Report.** Type `/singular init`. Claude runs `node "${CLAUDE_PLUGIN_ROOT}/bin/singular.js" init`, shows the report verbatim and asks which numbered candidates you want (or none). Observed 2026-10-13 from the Next.js fixture project with 171 installed skills indexed (first run 7.9 s wall: 8 skills.sh searches, the audits of the shortlisted candidates and one `git ls-remote` per repository; a rerun within 24 h is served from the cache in 0.12 s):
+
+```
+[singular] init: proj
+Stack: Next.js 16, React 19, Tailwind 4, Supabase, Stripe, Vitest, Playwright, TypeScript 5 strict, pnpm
+Needs (8): next (dep), react (dep), supabase (dep), stripe (dep), tailwind (dep), vitest (dep), playwright (dep), typescript (dep)
+Covered by installed skills: next -> vercel:nextjs; react -> vercel:react-best-practices
+Not covered: supabase, stripe, tailwind, vitest, playwright, typescript
+Suggested third-party skills (pinned, not installed):
+  1. anthropics/claude-plugins-official#f359d43@stripe-best-practices   1.4K installs   audit warn   for: stripe
+  2. anthropics/skills#dbd4588@webapp-testing   176K installs   audit warn   for: playwright
+  3. vercel-labs/agent-skills#063bee9@vercel-react-best-practices   794K installs   audit pass   for: react (also)
+  4. microsoft/playwright-cli#b85c7a7@playwright-cli   182K installs   audit warn   for: playwright
+  5. vercel-labs/agent-skills#063bee9@vercel-react-native-skills   239K installs   audit warn   for: react (also)
+  6. microsoft/playwright#a3401cf@playwright-dev   3.6K installs   audit warn   for: playwright
+  7. vercel-labs/agent-skills#063bee9@vercel-react-view-transitions   151K installs   audit pass   for: react (also)
+  8. vercel-labs/json-render#5473fe1@react   14.6K installs   audit pass   for: react (also)
+Approve: /singular init --apply 1,2   (or: all)   Add --project to install into ./.claude/skills instead of ~/.claude/skills
+```
+
+**2. Approve.** Answer with the numbers (`2 and 3`, `all`, `none`), or type the command yourself: `/singular init --apply 2,3`. Claude runs `node "${CLAUDE_PLUGIN_ROOT}/bin/singular.js" init --apply 2,3` (plus `--project` if you asked for a project-local install) and shows the result verbatim. Observed for `2,3` (3.5 s: two pinned `git fetch`es; paths shortened):
+
+```
+[singular] init --apply 2,3: 2 of 8 candidates for proj (plan from 2026-10-13T08:20:02.197Z) -> /Users/you/.claude/skills
+REJECTED 2. anthropics/skills#dbd4588@webapp-testing: executable bit in repository tree: skills/webapp-testing/scripts/with_server.py (mode 100755); plugin component directory scripts/; executable bit on scripts/with_server.py (nothing was written)
+INSTALLED 3. vercel-labs/agent-skills#063bee9@vercel-react-best-practices -> /Users/you/.claude/skills/vercel-react-best-practices (audit pass)
+Installed: vercel-react-best-practices
+Kickoff prompt (copy or say "run it"):
+  Using the skill vercel-react-best-practices, review this Next.js 16 + React 19 project: list the 3 highest-impact improvements for react, then implement the first one.
+Reload: new skills are picked up automatically; run /reload-skills if /singular status does not list them.
+```
+
+Candidate 2 failed the same inspection `/singular add` runs (a `scripts/` directory with an executable file would make the folder a plugin, not prose) and nothing was written; candidate 3 was copied as 76 plain files. Running the same `--apply` again prints `SKIPPED 3. ... (exists: /Users/you/.claude/skills/vercel-react-best-practices)`, `Installed: none`, `Kickoff prompt: none (nothing new was installed)` (exit 0); with `--project` the same candidate goes to `./.claude/skills/vercel-react-best-practices` instead.
+
+**3. Kickoff.** Claude asks whether to run the kickoff prompt now. Say "run it" and it follows that prompt, invoking the named skills with the Skill tool; or copy the line into a later prompt. The prompt is generated deterministically from the stack and the installed skill names (no model call, at most 400 characters), so the skills are named exactly as the Skill tool needs them.
+
+### What the report lines mean
+
+| line | meaning |
+| :-- | :-- |
+| `Stack:` | the one-line summary the hook injects on every prompt (`(unknown)` without a manifest) |
+| `Needs (N):` | up to 12 things this project needs a skill for, strongest first, each with where the signal came from: `dep` (a dependency in `package.json`, `pyproject.toml`, `requirements*.txt`, `Pipfile`, `go.mod`, `Cargo.toml`, `Gemfile` or `pom.xml`, mapped through a built-in lexicon: `next`, `react`, `tailwind`, `prisma`, `supabase`, `stripe`, `auth`, `playwright`, `fastapi`, `django`, `openai`, `mcp`, …), `file` (a tooling file or directory: `Dockerfile`, `docker-compose.yml`, `.github/workflows`, `vercel.json`, `terraform/`, `supabase/`, `prisma/`, `turbo.json`, `pnpm-workspace.yaml`, `nx.json`, `playwright.config.*`, `tsconfig.json`, …, or the dominant language by file extension), `readme` (a tech word in the first 40 lines of `README.md` or `CLAUDE.md`). A directory without signals prints `Needs (0): no signals`. The scan is read-only, three levels deep, skips `node_modules`, `.git`, `dist`, `build`, `.next`, `venv` and the like, never follows symlinks and stops after 5,000 entries |
+| `Covered by installed skills:` | `need -> skill` for every need an installed skill (user, project, plugin or claude.ai-synced) already matches by name or description. Covered needs get no candidate, except that the three strongest needs are searched anyway and their candidates are flagged `(also)` |
+| `Not covered:` | the needs no installed skill matches; each one is searched on skills.sh as a single need word (`q=supabase`): the word from the lexicon, never your README text or dependency names |
+| `1. owner/repo#sha7@skill   installs   audit status   for: need` | a candidate that passed the same gates as the hook (owner allowlist, `blockedRefs`, install floor, fork dedupe, already-installed names, audit `fail` dropped), ranked by relevance x log10(installs), taken round-robin across needs, at most `initMaxCandidates` (8). `#sha7` is the commit the plan is **pinned** to: HEAD was resolved when the report was made, and `--apply` installs exactly that commit even if the repository has moved on since. A candidate whose HEAD could not be resolved is listed with `(HEAD not resolved: not approvable)` and skipped by `--apply` |
+| `Approve:` | the exact command to type; `all` takes every approvable candidate; `--project` targets `./.claude/skills` |
+
+When no candidate survives, the line reads `Suggested third-party skills (pinned, not installed): none passed the gates`, `none (skills.sh rate-limited until HH:MM)`, `none (third-party search failed: timeout / network error)` or `none (no needs to search)`, and an `Errors:` line names any failed request.
+
+### Options
+
+- `/singular init --no-remote`: installed-only; no network at all. The report ends with `Suggested third-party skills: skipped (--no-remote)` and the plan is written without candidates (a later `--apply` says `the plan has no candidates; run /singular init again`).
+- `/singular init --apply <1,3 | 1-3 | all> [--project]`: install the approved candidates (see "The plan" below). `--project` installs into `./.claude/skills` of the current directory instead of `~/.claude/skills`.
+- `--json` prints the plan object plus diagnostics (the inspection: languages, manifests, tooling files, README words; `remote.queries`, the rejected counts by reason, the index size, the plan path, timings) instead of the report; with `--apply` it prints the per-candidate results, `installed`, `kickoff` and `target` as JSON.
+- `--yes` is accepted and ignored: typing `--apply` is the approval. `--cwd <dir>` inspects another directory (terminal use).
+
+### The plan
+
+The report writes `~/.claude/singular/init-plan.json` (`$SINGULAR_HOME/init-plan.json`): `{version: 1, cwd, createdAt, stack, needs, coverage, candidates: [{n, ref, source, skill, installs, audit, need, reason, also, sha, approvable}]}`, where `ref` is the pinned `owner/repo#<40-hex-sha>@skill`. Every `init` run overwrites it. `--apply` reads it and refuses with exit 1 when it is missing (`[singular] init --apply: no plan found at …/init-plan.json; run /singular init first`), older than `initPlanTtlHours` (24 h: `the plan at … is 30 h old (older than 24 h); run /singular init again`), made for another directory (`the plan was made for <dir>, not <cwd>; run /singular init here first`), has no candidates, or when a number is out of range (`9 is not in the plan (candidates are 1-8)`).
+
+For each selected number `--apply` runs the `/singular add` flow with the plan's pinned ref (HEAD is **never** re-resolved): the target folder must not exist (`SKIPPED n. <ref> (exists: <path>)`), the pinned commit is fetched with `git`, the tree is checked for symlinks, executable bits and submodules, the folder is inspected before the copy, copied with a before/after snapshot of the skills directory and inspected again. Each candidate prints one line, `INSTALLED n. <ref> -> <path> (audit <status>)`, `REJECTED n. <ref>: <problems> (nothing was written)` (or `removed again; nothing left behind` when the copy had already happened) or `ERROR n. <ref>: <message>`, followed by `Installed: <names>` and the kickoff block. Exit code 0 when everything selected was installed or skipped, 1 when anything was rejected or errored. Nothing is ever installed without a typed `--apply`; `/singular init` alone only reads the project, queries skills.sh and writes the plan.
 
 ## Use it
 
@@ -34,7 +100,7 @@ Requirements for the remote features: `git` on `PATH` (used for commit pinning a
 Shows the configuration, effective mode, how many installed skills were indexed, the stack of the current directory, cache statistics, ephemeral pins, persistent installs and the last log lines, followed by the one-screen help. Claude runs `node "${CLAUDE_PLUGIN_ROOT}/bin/singular.js" status` through the Bash tool and relays the output verbatim (observed 2026-10-13 with a fresh state dir, from the Next.js fixture project; paths shortened):
 
 ```
-[singular] singular 0.2.0  plugin root: /Users/you/.claude/singular/plugin
+[singular] singular 0.3.0  plugin root: /Users/you/.claude/singular/plugin
 state dir: /Users/you/.claude/singular
 config:    /Users/you/.claude/singular/config.json
   mode: "suggest"
@@ -80,14 +146,18 @@ Singular — find, load, add and manage third-party skills for Claude Code
                                    load a skill's text into this session only (commit-pinned, sanitized; nothing
                                    is written to ~/.claude/skills); owner/repo#<40-hex-sha>@skill pins a commit
   /singular add owner/repo@skill   persistent install into ~/.claude/skills (pinned, inspected before and after the copy)
+  /singular init [--no-remote]     inspect this project: needs, which installed skills cover them, numbered pinned
+                                   third-party candidates (gated, not installed); writes a plan, installs nothing
+  /singular init --apply 1,3|all [--project]
+                                   install the approved candidates from the plan (pinned; --project: ./.claude/skills)
   /singular mode [off|local|suggest|auto]
                                    show or switch the mode (rewrites only the "mode" key of config.json)
   /singular help                   this help
-Config: ~/.claude/singular/config.json (allowlist, blockedRefs, installFloor, pinnedSkills, ...).
+Config: ~/.claude/singular/config.json (allowlist, blockedRefs, installFloor, pinnedSkills, initMaxCandidates, ...).
 From a terminal: `singular <subcommand> ...` (npm install -g singular-skill) or `node bin/singular.js <subcommand> ...`.
 ```
 
-An unknown subcommand (`/singular turbo`) prints `[singular] unknown subcommand "turbo"; expected one of status | help | find | load | add | mode` followed by the same help, and exits 1.
+An unknown subcommand (`/singular turbo`) prints `[singular] unknown subcommand "turbo"; expected one of status | help | find | load | add | mode | init` followed by the same help, and exits 1.
 
 ### `/singular find <query>`
 
@@ -166,6 +236,15 @@ Run /reload-skills or start a new session to use it.
 
 A folder that would become a plugin (hooks, `bin/`, MCP, agents, executable files, symlinks, capability-granting frontmatter in any spelling, shell forms) prints `REJECTED: <pinned ref>` with one problem per line and `Nothing was written to ~/.claude/skills.` (verified against a local bare repository built from `test/fixtures/skill-folders/malicious`). Other outcomes, all exit 1 with nothing written: `REFUSED: ~/.claude/skills/<skill> already exists (directory). Remove it yourself first; singular never overwrites.`, `REJECTED: owner "evil" is not allowlisted [...]`, `no skill named "DOCX" in anthropics/skills at 683bc88 (exact, case-sensitive). Found: ...`, `git fetch failed (exit 128): ...` for a bogus sha, `could not resolve HEAD of ...: repository not found or private (GitHub asked for credentials)`.
 
+### `/singular init [--apply <1,3|1-3|all>] [--project] [--no-remote] [--json]`
+
+```
+/singular init
+/singular init --apply 2,3
+```
+
+The project set-up flow described under "Set up a project": `init` inspects the current directory, reports its needs, which installed skills cover them and up to 8 pinned third-party candidates, writes the plan and installs nothing; `init --apply <numbers|all>` installs the chosen candidates from that plan through the `add` flow and prints a kickoff prompt. The skill body makes Claude show the report, ask which numbers to install, run `--apply` only with your answer, and offer to run the kickoff prompt. Argument errors exit 1 before anything runs: `[singular] init: --apply needs a selection: numbers like 1,3 or 1-3, or all`, `unexpected argument "--force"`, `cannot parse "1;2": expected numbers like 1,3 or 1-3, or all`, `9 is not in the plan (candidates are 1-8)`; `--help` prints `usage: singular init [--apply <1,3|1-3|all>] [--project] [--no-remote] [--json] [--yes] [--cwd <dir>]`. From a terminal: `singular init [--cwd <project>]` (the npm binary proxies it) or `node ~/.claude/singular/plugin/bin/singular.js init [--cwd <project>]` (see "CLI reference").
+
 ### `/singular mode [off|local|suggest|auto]`
 
 ```
@@ -183,7 +262,7 @@ With one: `[singular] mode: suggest -> local (/Users/you/.claude/singular/config
 
 ### From a terminal
 
-Every subcommand also works without Claude: `singular status`, `singular find <query>`, `singular load <ref>`, `singular add <ref>`, `singular mode <m>` proxy to the same scripts (see "CLI reference"). The per-prompt hook can be dry-run too:
+Every subcommand also works without Claude: `singular status`, `singular find <query>`, `singular load <ref>`, `singular add <ref>`, `singular mode <m>`, `singular init [--apply …]` proxy to the same scripts (see "CLI reference"). The per-prompt hook can be dry-run too:
 
 ```bash
 node ~/.claude/singular/plugin/bin/on-prompt.js --dry-run "<your prompt>" --cwd ~/some-project --verbose
@@ -214,9 +293,9 @@ prints exactly what would be injected, the timings, which words (if any) were se
 
    A detached background process prefetches the top candidate's text so the next step is instant. Cold discovery measured 1.2-2.4 s (catalogs plus two searches), warm 5-32 ms (2026-10-08).
 
-3. **You decide.** `/singular load <ref>` loads the text (pinned, sanitized, session-only); `/singular add <ref>` installs it persistently after inspection; `/singular find <query>` shows the full gated and rejected lists when a pick looks off. Nothing third-party reaches Claude without one of these, unless you turn on `auto`.
+3. **You decide.** `/singular load <ref>` loads the text (pinned, sanitized, session-only); `/singular add <ref>` installs it persistently after inspection; `/singular find <query>` shows the full gated and rejected lists when a pick looks off; `/singular init` does the same for a whole project at once (needs, coverage, numbered pinned candidates) and `/singular init --apply <numbers>` installs the ones you chose. Nothing third-party reaches Claude without one of these, unless you turn on `auto`.
 
-4. **State lives in `~/.claude/singular/`**: `config.json`, `cache/`, `loaded.json` (ephemeral pins), `installed.json` (persistent installs), `singular.log`, and the installed plugin copy under `plugin/`. The hooks never write anywhere else; `/singular add` is the only path that writes under `~/.claude/skills`, and only after inspection.
+4. **State lives in `~/.claude/singular/`**: `config.json`, `cache/`, `loaded.json` (ephemeral pins), `installed.json` (persistent installs), `init-plan.json` (the last `/singular init` plan), `singular.log`, and the installed plugin copy under `plugin/`. The hooks never write anywhere else; `/singular add` and `/singular init --apply` are the only paths that write under `~/.claude/skills` (or `./.claude/skills` with `--project`), and only after inspection.
 
 ## Modes
 
@@ -289,10 +368,12 @@ A catalog request that times out is remembered for 5 minutes (`fail:catalog:<own
 | `blockedRefs` | `[]` | never suggest/load/install these: `owner`, `owner/repo` or `owner/repo@skill`; wins over the allowlist |
 | `pinnedSkills` | `[]` | always-on skills, injected once per session (see "Always-on guidelines") |
 | `prefetch` | `true` | in `suggest`, spawn a detached `on-expand.js <ref> --prefetch` for the top candidate so its HEAD and text are cached before you type `/singular load`. `false` disables the background process |
+| `initMaxCandidates` | `8` | `/singular init`: at most this many third-party candidates in the plan (`0` skips the skills.sh step; the report then says `none (initMaxCandidates is 0)`) |
+| `initPlanTtlHours` | `24` | `/singular init --apply` refuses a plan older than this (`run /singular init again`) |
 
 Environment (untrusted: a repository's committed `.claude/settings.json` `env` block reaches the hook process, so the environment can only **lower** privilege): `SINGULAR_HOME` (state directory, default `~/.claude/singular`; honoured only as an absolute path outside the project directory, and `mode: "auto"` is never honoured in a redirected home), `SINGULAR_MODE` (per-process mode override; can only lower the mode below the config file's value), `CLAUDE_CONFIG_DIR` (honoured when indexing installed skills and by the `singular` CLI), `SINGULAR_DEBUG=1` (log the extracted keywords). `/singular status` lists every override and whether it was ignored, and names any active **test seam** (`SINGULAR_REGISTRY_BASE`, `SINGULAR_GIT_BASE`, `SINGULAR_SKILLS_DIR`, `SINGULAR_TEST_ALLOW_AUTO`): those exist only for the test suite and are documented in `docs/testing.md`.
 
-State files under the state directory: `config.json`, `cache/`, `loaded.json` (ephemeral pins: `{ref, sha, ts, lastTs, loads, chars, stripped}` per unpinned ref), `installed.json` (persistent installs made by `/singular add`), `singular.log` (JSON lines, rotated at 2 MB), `.auto-mode-warned`, `spill-*.md` (last-resort overflow of oversized routing text), and `plugin/` (the installed plugin copy, managed by the `singular` CLI; `plugin.prev/` is the previous copy kept for rollback).
+State files under the state directory: `config.json`, `cache/`, `loaded.json` (ephemeral pins: `{ref, sha, ts, lastTs, loads, chars, stripped}` per unpinned ref), `installed.json` (persistent installs made by `/singular add` and `/singular init --apply`), `init-plan.json` (the last `/singular init` plan: cwd, stack, needs, coverage, pinned candidates; overwritten on every run, refused by `--apply` after `initPlanTtlHours`), `singular.log` (JSON lines, rotated at 2 MB), `.auto-mode-warned`, `spill-*.md` (last-resort overflow of oversized routing text), and `plugin/` (the installed plugin copy, managed by the `singular` CLI; `plugin.prev/` is the previous copy kept for rollback).
 
 ### Adding an allowlist owner
 
@@ -317,7 +398,7 @@ State files under the state directory: `config.json`, `cache/`, `loaded.json` (e
 | `singular uninstall [--purge]` | `claude plugin uninstall singular@singular`, `claude plugin marketplace remove singular`, removes `~/.claude/singular/plugin`. `--purge` also removes the config, cache, log and pins (the whole `~/.claude/singular`) |
 | `singular status` | node and claude versions, payload path and version, whether the marketplace is registered and the plugin installed/enabled (from `claude plugin list --json`), config path and mode, the last 5 `singular.log` lines |
 | `singular doctor` | `status` plus an actionable hint for each problem it finds (claude missing or too old, marketplace not registered, plugin not installed or disabled, mode `auto`, config warnings) |
-| `singular find <query>` · `singular add <ref>` · `singular mode [m]` · `singular load <ref>` | proxies to `bin/singular.js` (`load` to the direct CLI mode of `bin/on-expand.js`, which prints the sanitized text to stdout), so the same commands work from a terminal with the same output and exit codes |
+| `singular find <query>` · `singular add <ref>` · `singular mode [m]` · `singular init [--apply …]` · `singular load <ref>` | proxies to `bin/singular.js` (`load` to the direct CLI mode of `bin/on-expand.js`, which prints the sanitized text to stdout), so the same commands work from a terminal with the same output and exit codes. `singular init` inspects the shell's current directory (`--cwd <dir>` for another one) and reads/writes the plan under `~/.claude/singular` |
 
 The underlying scripts remain callable directly from the installed copy (`P=~/.claude/singular/plugin`):
 
@@ -326,6 +407,8 @@ node $P/bin/singular.js status [--json] [--cwd DIR]
 node $P/bin/singular.js help
 node $P/bin/singular.js find "playwright flaky tests" [--limit N] [--all] [--json] [--cwd DIR]
 node $P/bin/singular.js add anthropics/skills@frontend-design [--yes] [--json]
+node $P/bin/singular.js init [--no-remote] [--json] [--cwd DIR]                      # report + plan; installs nothing
+node $P/bin/singular.js init --apply 1,3 [--project] [--json] [--cwd DIR]            # 1,3 | 1-3 | all: install from the plan
 node $P/bin/singular.js mode [off|local|suggest|auto] [--json]
 node $P/bin/singular.js load multica-ai/andrej-karpathy-skills@karpathy-guidelines [--update] [--json]   # terminal form of /singular load: prints the sanitized text
 node $P/bin/on-expand.js multica-ai/andrej-karpathy-skills@karpathy-guidelines [--update] [--json]   # what /singular load injects
@@ -338,6 +421,8 @@ node $P/bin/on-subagent.js --dry-run [--cwd DIR]
 **Why are there no third-party candidates?** In order of likelihood: (1) an installed skill was a strong match, so the remote step was skipped (`--dry-run --verbose` shows `local=name:score*`, `*` = strong, and no `discover=` line); (2) every ranked entry was rejected: `/singular find <query>` shows the reasons: `owner not allowlisted` (by far the largest group), `installs N < floor 1000`, `already installed locally (...)` (a candidate whose name matches an installed skill is dropped in favour of the local one), `fork of ...`, `duplicate skill name`, audit `fail`; (3) no allowlisted owner publishes anything whose *name* contains a word from your prompt (terraform, s3), and names only match on exact stemmed tokens; (4) the mode is `local`/`off`, the prompt is under 40 characters or starts with `/`, or skills.sh is in a 5-minute 429 cooldown (`/singular status`); (5) a request timed out (`errors` in `--dry-run --json`; that owner is then skipped for 5 minutes and a stale catalog keeps ranking).
 
 **Why did it not suggest X?** Run `/singular find <the words you expected to match>`. If X appears under `Best allowlist-only rejection`, its owner is not in your allowlist. If X is listed under `fork of ...`, an allowlisted source publishes the same skill name and won. If X is not in the list at all, skills.sh did not return it for the words searched: the hook sends only single tech-lexicon words (`shared=[...]` in `--dry-run --verbose`), and the API is lexical and capped at 200 results per query, so a repository whose skill names contain neither `skill` nor one of your tech words is unreachable from the hook (use `/singular find`, which also sends the joined query). Install counts come last in the ranking: a 315-install entry that matches two words outranks a 314K-install entry that matches one.
+
+**Why did `/singular init` list nothing for a need (or list a loose fit)?** The candidates come from one skills.sh search per need word (`q=supabase`), through the same gates as the hook, so the reasons under "Why are there no third-party candidates?" apply: `--json` shows `remote.queries` (how many results each word returned, which were cached or skipped) and `remote.rejectedByReason` (`owner not allowlisted`, `installs N < floor N`, `already installed locally (...)`, `fork of ...`, `audit fail`). A covered need is searched only when it is among the three strongest (`(also)` candidates). A need you expected but do not see was not detected: `--json` lists `inspection.manifests`, `inspection.tooling` and `inspection.readme.words`, the only inputs the lexicon maps. A loose fit (a `react` need matched by a `react native` skill name) is still just a numbered line: nothing is installed until you pick it, and `/singular find <word>` shows the full ranking.
 
 **How do I add an owner?** Edit `~/.claude/singular/config.json` and append `"owner"` (or `"owner/repo"` for one repository) to `allowlist`; no restart. `/singular find` prints the exact owner to add. Adding an owner means every skill under that GitHub account can be suggested, loaded and installed through the gates; read what you add. Never let Claude edit the allowlist for you (the skill bodies tell it not to).
 
@@ -381,6 +466,9 @@ singular install
 | Nothing appears in context | `/singular status`: is `mode` `off`? Is the prompt >= 40 chars and not a slash command? `node ~/.claude/singular/plugin/bin/on-prompt.js --dry-run "<prompt>" --cwd <project> --verbose` prints the skip reason. In an interactive session hook context is not printed as a message; use `claude --verbose` or `-p --output-format stream-json --verbose --include-hook-events` |
 | `mode` is `auto` in the file but `/singular status` says `suggest` | `auto` counts only in the default `~/.claude/singular/config.json`; a redirected `SINGULAR_HOME` or `SINGULAR_MODE` can only lower the mode |
 | `/singular add` printed `REJECTED` | The downloaded folder contained plugin components, non-plain files in the git tree or capability frontmatter; nothing was written. Use `/singular load` for the text only, or vet the repository by hand |
+| `/singular init --apply` says `no plan found`, `is N h old (older than 24 h)` or `was made for <dir>, not <cwd>` | The plan is per directory and expires after `initPlanTtlHours`. Run `/singular init` again in the project and approve from the fresh report (the shas may have moved on) |
+| `/singular init --apply` printed `REJECTED n. <ref>: ...` for one candidate (exit 1) | Same inspection as `/singular add`: that folder would have become a plugin (observed: `anthropics/skills@webapp-testing` carries an executable `scripts/with_server.py`); it was never kept, the other selected candidates were still installed. `/singular load <ref>` gives you its text without installing |
+| `/singular init` reports `Needs (0): no signals` or misses a need | Only known manifests, tooling files and the first 40 lines of `README.md`/`CLAUDE.md` are read, three levels deep. Run `node ~/.claude/singular/plugin/bin/singular.js init --json --cwd <project>` and look at `inspection`; `/singular find <word>` searches a need by hand |
 | Config warnings in `/singular status` | A key has the wrong type or the JSON is invalid; the default is used for that key. Fix the file; no restart needed |
 | I want to reset | `singular uninstall --purge` (or `rm -rf ~/.claude/singular` for the state only) |
 
@@ -394,7 +482,7 @@ singular uninstall --purge    # also delete the config, cache, log and pins (~/.
 npm uninstall -g singular-skill
 ```
 
-Skills installed with `/singular add` live under `~/.claude/skills/<skill>` as ordinary skills and are **not** removed by either command; delete them yourself.
+Skills installed with `/singular add` or `/singular init --apply` live under `~/.claude/skills/<skill>` (or `<project>/.claude/skills/<skill>` with `--project`) as ordinary skills and are **not** removed by either command; delete them yourself.
 
 ## Testing
 
@@ -407,7 +495,7 @@ npm run e2e                   # live: runs claude -p with the plugin loaded via 
 
 ## Security
 
-`docs/security.md` has the threat model, the eleven gates in the order they apply, why ephemeral loading is the default, how the environment and a repository's settings are treated (they can only lower privilege), the exact outbound requests, what the hooks never do, and the residual risks you accept. Short version: the hooks never write under `~/.claude/skills`, `~/.claude/plugins` or any settings file; never run a shell string; validate every reference with a strict grammar before any subprocess exists; strip capability-granting frontmatter and shell forms from loaded text; and never block a prompt (only a rejected `/singular load` is blocked, before any model call). `docs/spec.md` is the module contract.
+`docs/security.md` has the threat model, the eleven gates in the order they apply, why ephemeral loading is the default, how the environment and a repository's settings are treated (they can only lower privilege), the exact outbound requests, what the hooks never do, and the residual risks you accept. Short version: the hooks never write under `~/.claude/skills`, `~/.claude/plugins` or any settings file; never run a shell string; validate every reference with a strict grammar before any subprocess exists; strip capability-granting frontmatter and shell forms from loaded text; and never block a prompt (only a rejected `/singular load` is blocked, before any model call). `/singular init` pins every candidate at report time and `--apply` installs exactly those commits through the `add` inspection; the typed `--apply` is the approval. `docs/spec.md` is the module contract.
 
 ## License
 

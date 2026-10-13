@@ -230,6 +230,7 @@ describe('argv', () => {
     assert.deepEqual(parseArgs(['load', 'a/b@c', '--update']).rest, ['a/b@c', '--update']);
     assert.deepEqual(parseArgs(['add', 'a/b@c', '--yes']).rest, ['a/b@c', '--yes']);
     assert.deepEqual(parseArgs(['mode']).rest, []);
+    assert.deepEqual(parseArgs(['init', '--apply', '1,3', '--project', '--cwd', '/p']).rest, ['--apply', '1,3', '--project', '--cwd', '/p'], 'init is proxied verbatim (its options are not CLI options)');
     assert.match(parseArgs(['bogus']).errors[0], /unknown command "bogus"/);
     assert.match(parseArgs(['--bogus']).errors[0], /unknown option --bogus/);
     assert.match(parseArgs(['status', '--purge']).errors[0], /--purge applies to uninstall only/);
@@ -242,7 +243,7 @@ describe('argv', () => {
     const s = scenario('argv');
     assert.equal(await runCli(['--help'], s.deps), 0);
     assert.equal(s.stdout(), HELP);
-    for (const re of [/^Usage: singular <command> \[options\]$/m, /^  install \[--dir <path>\] \[--dry-run\] \[--json\]/m, /^  update\b/m, /^  uninstall \[--purge\]/m, /^  status \[--json\]/m, /^  doctor\b/m, /^  find <query>/m, /^  add <owner\/repo\[#sha\]@skill> \[--yes\]/m, /^  mode \[off\|local\|suggest\|auto\]/m, /^  load <owner\/repo\[#sha\]@skill> \[--update\]/m, /CLAUDE_CONFIG_DIR is passed through/]) assert.match(HELP, re);
+    for (const re of [/^Usage: singular <command> \[options\]$/m, /^  install \[--dir <path>\] \[--dry-run\] \[--json\]/m, /^  update\b/m, /^  uninstall \[--purge\]/m, /^  status \[--json\]/m, /^  doctor\b/m, /^  find <query>/m, /^  add <owner\/repo\[#sha\]@skill> \[--yes\]/m, /^  mode \[off\|local\|suggest\|auto\]/m, /^  init \[--no-remote\] \[--json\] \[--cwd <dir>\]/m, /^  init --apply <1,3\|1-3\|all> \[--project\]/m, /^  load <owner\/repo\[#sha\]@skill> \[--update\]/m, /CLAUDE_CONFIG_DIR is passed through/]) assert.match(HELP, re);
     const v = scenario('argv-v');
     assert.equal(await runCli(['-v'], v.deps), 0);
     assert.equal(v.stdout(), '0.2.0\n');
@@ -807,12 +808,13 @@ describe('singular status / doctor', () => {
   });
 });
 
-describe('proxies: find / add / mode -> bin/singular.js, load -> bin/on-expand.js', () => {
+describe('proxies: find / add / mode / init -> bin/singular.js, load -> bin/on-expand.js', () => {
   test('argv shapes', () => {
     const s = scenario('proxy-target');
     assert.deepEqual(proxyTarget(s.deps, 'find', ['playwright', 'flaky', '--limit', '3']), { file: path.join(s.pkg, 'bin', 'singular.js'), argv: [path.join(s.pkg, 'bin', 'singular.js'), 'find', 'playwright', 'flaky', '--limit', '3'] });
     assert.deepEqual(proxyTarget(s.deps, 'add', ['a/b@c']).argv, [path.join(s.pkg, 'bin', 'singular.js'), 'add', 'a/b@c']);
     assert.deepEqual(proxyTarget(s.deps, 'mode', []).argv, [path.join(s.pkg, 'bin', 'singular.js'), 'mode']);
+    assert.deepEqual(proxyTarget(s.deps, 'init', ['--apply', 'all', '--project']).argv, [path.join(s.pkg, 'bin', 'singular.js'), 'init', '--apply', 'all', '--project']);
     assert.deepEqual(proxyTarget(s.deps, 'load', ['a/b@c', '--update']).argv, [path.join(s.pkg, 'bin', 'on-expand.js'), 'a/b@c', '--update']);
   });
 
@@ -834,6 +836,10 @@ describe('proxies: find / add / mode -> bin/singular.js, load -> bin/on-expand.j
     const a = scenario('proxy-add');
     assert.equal(await runCli(['add', 'anthropics/skills@pdf', '--yes'], a.deps), 0);
     assert.deepEqual(a.spawnRecord[0].argv.slice(1), ['add', 'anthropics/skills@pdf', '--yes']);
+    const i = scenario('proxy-init');
+    assert.equal(await runCli(['init', '--no-remote', '--json'], i.deps), 0);
+    assert.deepEqual(i.spawnRecord[0].argv.slice(1), ['init', '--no-remote', '--json']);
+    assert.deepEqual(i.calls(), [], 'no claude call for the init proxy');
   });
 
   test('a missing script or a spawn error is a clear exit 1', async () => {

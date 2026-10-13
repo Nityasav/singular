@@ -46,6 +46,7 @@ describe('DEFAULTS / MODES / SEAM_VARS', () => {
     assert.deepEqual(Object.keys(DEFAULTS), [
       'mode', 'allowlist', 'installFloor', 'maxLocalSkills', 'maxCandidates', 'minPromptChars', 'remoteTimeoutMs', 'totalBudgetMs',
       'contextBudgetChars', 'cacheTtlHours', 'skillsCliVersion', 'requireAuditPass', 'stackDetection', 'blockedRefs', 'pinnedSkills', 'prefetch',
+      'initMaxCandidates', 'initPlanTtlHours',
     ]);
     assert.deepEqual(plain(DEFAULTS), {
       mode: 'suggest',
@@ -64,6 +65,8 @@ describe('DEFAULTS / MODES / SEAM_VARS', () => {
       blockedRefs: [],
       pinnedSkills: [],
       prefetch: true,
+      initMaxCandidates: 8,
+      initPlanTtlHours: 24,
     });
     assert.throws(() => { DEFAULTS.mode = 'auto'; }, TypeError, 'frozen (strict mode ESM)');
     assert.equal(DEFAULTS.mode, 'suggest');

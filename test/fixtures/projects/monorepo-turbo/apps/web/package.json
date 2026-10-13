@@ -1,0 +1,16 @@
+{
+  "name": "@acme/web",
+  "private": true,
+  "scripts": { "dev": "next dev", "build": "next build" },
+  "dependencies": {
+    "next": "^16.0.3",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "@clerk/nextjs": "^6.12.0",
+    "@acme/db": "workspace:*"
+  },
+  "devDependencies": {
+    "tailwindcss": "^4.1.0",
+    "@tailwindcss/postcss": "^4.1.0"
+  }
+}

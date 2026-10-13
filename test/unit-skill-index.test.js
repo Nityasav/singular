@@ -830,6 +830,7 @@ describe('mtime cache signature', () => {
     write(path.join(skills, 'ttl-a', 'SKILL.md'), skillMd('ttl-a', 'x'));
     pinAll();
     assert.equal((await buildIndex({ cwd, home, ttlMs: 0 })).length, base + 1);
+    clearIndexCache(); // a sub-millisecond-old cache entry from the previous call would otherwise be served as fresh
     const seen = (await buildIndex({ cwd, home, ttlMs: 1 })).length;
     write(path.join(skills, 'ttl-b', 'SKILL.md'), skillMd('ttl-b', 'x'));
     pinAll();

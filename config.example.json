@@ -19,5 +19,7 @@
   "stackDetection": true,
   "blockedRefs": [],
   "pinnedSkills": [],
-  "prefetch": true
+  "prefetch": true,
+  "initMaxCandidates": 8,
+  "initPlanTtlHours": 24
 }

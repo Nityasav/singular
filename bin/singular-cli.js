@@ -5,7 +5,7 @@
 //   singular install                 copies the plugin payload to ~/.claude/singular/plugin and registers it with
 //                                    Claude Code (claude plugin marketplace add + claude plugin install singular@singular)
 //   singular update | uninstall [--purge] | status | doctor
-//   singular find|add|mode|load ...  the /singular subcommands from a terminal
+//   singular find|add|mode|init|load ...  the /singular subcommands from a terminal
 //
 // Everything lives in lib/cli-core.js (injectable deps; see test/unit-cli.test.js). This file only maps argv to an
 // exit code. Zero dependencies; every subprocess is an execFile with an argument array, never a shell string.

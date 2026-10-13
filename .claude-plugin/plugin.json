@@ -1,7 +1,7 @@
 {
   "name": "singular",
   "displayName": "Singular",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Singular: per-prompt routing to installed skills, project stack detection, and allowlist-gated, commit-pinned, ephemeral loading of third-party skills from skills.sh.",
   "author": { "name": "Nitya Sav" },
   "license": "MIT",

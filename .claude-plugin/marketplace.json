@@ -8,7 +8,7 @@
       "name": "singular",
       "source": "./",
       "description": "Per-prompt skill routing, stack detection, and gated ephemeral discovery of third-party skills.",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "category": "productivity"
     }
   ]

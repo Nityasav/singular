@@ -1232,7 +1232,7 @@ describe('bin/singular.js status as a child process', () => {
     const r = await runBin('singular.js', ['status', '--json', '--cwd', PROJ], { env: baseEnv(home, { HOME: SKILLS_HOME, SINGULAR_MODE: 'local', CLAUDE_CONFIG_DIR: path.join(SKILLS_HOME, '.claude') }) });
     assert.equal(r.code, 0, r.stderr);
     const s = JSON.parse(r.stdout);
-    assert.equal(s.version, '0.2.0');
+    assert.equal(s.version, '0.3.0');
     assert.equal(s.pluginRoot, ROOT);
     assert.equal(s.home, home);
     assert.equal(s.configPath, path.join(home, 'config.json'));
@@ -1254,7 +1254,7 @@ describe('bin/singular.js status as a child process', () => {
     const t = await runBin('singular.js', ['status', '--cwd', PROJ], { env: baseEnv(home, { HOME: SKILLS_HOME, SINGULAR_MODE: 'local' }) });
     assert.equal(t.code, 0);
     const lines = t.stdout.split('\n');
-    assert.equal(lines[0], `[singular] singular 0.2.0  plugin root: ${ROOT}`);
+    assert.equal(lines[0], `[singular] singular 0.3.0  plugin root: ${ROOT}`);
     assert.equal(lines[1], `state dir: ${home}`);
     assert.equal(lines[2], `config:    ${path.join(home, 'config.json')}`);
     assert.match(t.stdout, /\n  mode: "local"\n/);
@@ -1483,7 +1483,7 @@ describe('bin/singular.js dispatcher (the /singular command and the terminal ent
   test('help, --help and -h print the one-screen help on stdout (exit 0); an unknown subcommand prints it on stderr with the reason (exit 1, nothing on stdout)', async () => {
     const home = freshHome('dispatch-help');
     const { HELP, SUBCOMMANDS, parseDispatch } = await import('../bin/singular.js');
-    assert.deepEqual([...SUBCOMMANDS], ['status', 'help', 'find', 'load', 'add', 'mode']);
+    assert.deepEqual([...SUBCOMMANDS], ['status', 'help', 'find', 'load', 'add', 'mode', 'init']);
     for (const args of [['help'], ['--help'], ['-h'], ['HELP'], ['help', 'extra']]) {
       const r = await runBin('singular.js', args, { env: baseEnv(home) });
       assert.deepEqual([r.code, r.stdout, r.stderr], [0, `${HELP}\n`, ''], JSON.stringify(args));
@@ -1493,7 +1493,7 @@ describe('bin/singular.js dispatcher (the /singular command and the terminal ent
       const r = await runBin('singular.js', args, { env: baseEnv(home) });
       assert.equal(r.code, 1, JSON.stringify(args));
       assert.equal(r.stdout, '', JSON.stringify(args));
-      assert.ok(r.stderr.startsWith(`[singular] unknown subcommand "${args[0]}"; expected one of status | help | find | load | add | mode\n${EXPECTED_HELP_LINE}\n`), r.stderr.slice(0, 200));
+      assert.ok(r.stderr.startsWith(`[singular] unknown subcommand "${args[0]}"; expected one of status | help | find | load | add | mode | init\n${EXPECTED_HELP_LINE}\n`), r.stderr.slice(0, 200));
       assert.ok(r.stderr.endsWith(`${HELP}\n`));
     }
     assert.deepEqual(parseDispatch([]), { sub: 'status', rest: [] });

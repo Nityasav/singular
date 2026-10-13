@@ -46,7 +46,7 @@ export const HEAD_CACHE_PREFIX = 'head:';
 export const SESSION_TTL_HOURS = 24 * 7;
 // One factual line for prompts that talk about singular itself: /singular is user-only (disable-model-invocation),
 // so the model cannot see its subcommands and would otherwise guess them.
-export const COMMANDS_HINT = 'singular commands (typed by the user): /singular (status + help), /singular status (config, pins, cache), /singular find <query> (search skills.sh; the singular-find skill is also model-invocable), /singular load owner/repo@skill (load text into this session), /singular mode <off|local|suggest|auto>, /singular add owner/repo@skill (pinned persistent install).';
+export const COMMANDS_HINT = 'singular commands (typed by the user): /singular (status + help), /singular status (config, pins, cache), /singular find <query> (search skills.sh; the singular-find skill is also model-invocable), /singular load owner/repo@skill (load text into this session), /singular mode <off|local|suggest|auto>, /singular add owner/repo@skill (pinned persistent install), /singular init (inspect this project, suggest and install skills).';
 // A prompt is about the plugin when it names the command (/singular, /singular-find) or uses the word next to a
 // plugin noun; the word alone is ordinary English ("singular value decomposition") and must not trigger the hint.
 const SINGULAR_COMMAND_RE = /\/singular(?:-find)?\b/i;
