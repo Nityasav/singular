@@ -353,6 +353,20 @@ node $P/bin/on-subagent.js --dry-run [--cwd DIR]
 
 ## Troubleshooting
 
+
+**`zsh: command not found: singular` right after `npm install -g singular-skill`.** The install worked; npm's global `bin` folder just isn't on your PATH (common with a custom prefix, nvm or Volta). Either skip the PATH question entirely:
+
+```bash
+npx singular-skill install
+```
+
+or put npm's global bin on your PATH once:
+
+```bash
+echo "export PATH=\"$(npm prefix -g)/bin:\$PATH\"" >> ~/.zshrc && source ~/.zshrc
+singular install
+```
+
 | Symptom | Check |
 | :-- | :-- |
 | `singular install` says `claude: command not found` (or `claude is not on PATH`) | Install Claude Code first (`npm install -g @anthropic-ai/claude-code` or the native installer) and make sure `claude --version` prints in the same shell. The CLI calls `claude` from `PATH`; nothing is registered until it is found |
