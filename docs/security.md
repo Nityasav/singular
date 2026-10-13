@@ -127,3 +127,17 @@ Additional Claude Code settings worth knowing (all opt-in, none required by this
 ## 8. Reporting
 
 If you find a way for singular to write outside `$SINGULAR_HOME` and `~/.claude/skills/<skill>` (the latter only via `/singular add` or `/singular init --apply`; `<cwd>/.claude/skills/<skill>` only via a typed `--apply --project`), to install anything from `/singular init` without `--apply`, to make `--apply` fetch a commit other than the one in the plan, to run a subprocess with unvalidated input, to send prompt text other than tech-lexicon words to a third party, or to pass unsanitized third-party text to Claude, open an issue with the ref and the command; include `$SINGULAR_HOME/singular.log` lines for the run.
+
+### init hardening (security review, 2026-10-13)
+
+- **Manifest parsing is linear.** `quotedNames` uses disjoint character classes (the name class and the
+  "rest of the quoted string" class cannot overlap), so an unterminated quote cannot trigger polynomial
+  backtracking, and each fragment is capped at `MAX_QUOTED_BLOCK` (8 KB). Regression: `test/unit-hardening.test.js`.
+- **The project walk cannot be flooded.** Directories are read through `fs.opendirSync` in bounded batches
+  (`readDirBounded`), so a single directory with millions of entries is never loaded whole before the
+  `maxFiles` cap (5,000) applies; symlinks are still never followed.
+- **`--project` installs never follow symlinks.** Before any network or git activity, `runAdd` checks every
+  existing component between the project root and `./.claude/skills` with `lstat` (`symlinkBetween`): a
+  symlinked `.claude` or `.claude/skills` (which a cloned repository could ship) is refused with
+  `REFUSED: ... is a symlink`, so nothing can be written outside the project. Skill names are already
+  restricted to `[A-Za-z0-9][A-Za-z0-9._-]*`, never `.`/`..`.
